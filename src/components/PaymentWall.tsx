@@ -397,23 +397,23 @@ export default function PaymentWall({
           </div>
         ) : (
           <>
-            {thumbnailUrl && (
-              <div className="relative">
+            {thumbnailUrl ? (
+              <div className="relative flex min-h-[320px] flex-col items-center justify-center px-4">
                 <img
                   src={thumbnailUrl}
                   alt="Preview"
-                  className="w-full opacity-40 blur-sm"
+                  className="absolute inset-0 h-full w-full object-cover opacity-40 blur-sm"
                 />
-                {/* Desktop only: overlay buttons on thumbnail */}
-                <div className="absolute inset-0 hidden flex-col items-center justify-center bg-black/40 px-4 md:flex">
+                <div className="absolute inset-0 bg-black/40" />
+                <div className="relative z-10">
                   {productButtons}
                 </div>
               </div>
+            ) : (
+              <div className="flex flex-col items-center px-4 py-6">
+                {productButtons}
+              </div>
             )}
-            {/* Mobile: below thumbnail. No thumbnail: always visible. */}
-            <div className={`flex flex-col items-center px-4 py-6 ${thumbnailUrl ? "md:hidden" : ""}`}>
-              {productButtons}
-            </div>
           </>
         )}
       </div>
