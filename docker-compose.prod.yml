@@ -1,0 +1,22 @@
+# Production overrides — use with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  app:
+    ports: []  # No direct exposure — sits behind reverse proxy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+
+  mongo:
+    ports: []  # No external access in production
+    command: ["mongod", "--auth", "--bind_ip_all"]
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 512M

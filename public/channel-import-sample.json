@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "media": [
+    {
+      "name": "Episode 1 — Getting Started",
+      "description": "An introduction to the series.",
+      "source_url": "https://example.com/videos/ep1.mp4",
+      "media_type": "video",
+      "thumbnail_url": "https://example.com/thumbs/ep1.jpg",
+      "product": {
+        "name": "Episode 1 Access",
+        "price_cents": 500
+      }
+    },
+    {
+      "name": "Episode 2 — Deep Dive",
+      "description": "A closer look at the core concepts.",
+      "source_url": "https://example.com/videos/ep2.mp4",
+      "media_type": "video",
+      "thumbnail_url": "https://example.com/thumbs/ep2.jpg",
+      "product": {
+        "name": "Episode 2 Access",
+        "price_cents": 500
+      }
+    },
+    {
+      "name": "Bonus — Behind the Scenes",
+      "description": "Free bonus content, no product required.",
+      "source_url": "https://example.com/videos/bonus.mp4",
+      "media_type": "video"
+    }
+  ]
+}

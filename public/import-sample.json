@@ -1,0 +1,98 @@
+{
+  "version": "1.0",
+  "categories": [
+    {
+      "slug": "tutorials",
+      "name": "Tutorials",
+      "position": 1,
+      "active": true
+    },
+    {
+      "slug": "entertainment",
+      "name": "Entertainment",
+      "position": 2,
+      "active": true
+    }
+  ],
+  "channels": [
+    {
+      "slug": "cooking-with-bitcoin",
+      "name": "Cooking with Bitcoin",
+      "bio": "Learn to cook while learning about Bitcoin. New episodes every week.",
+      "category_slug": "tutorials",
+      "nsfw": false,
+      "social_links": {
+        "youtube": "https://youtube.com/@cookingwithbitcoin",
+        "twitter": "https://x.com/cookingwithbtc"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "name": "Episode 1: Satoshi's Ramen",
+          "description": "In this episode we make a delicious ramen while discussing the Bitcoin whitepaper.",
+          "source_url": "https://storage.example.com/videos/ep1-satoshis-ramen.mp4",
+          "media_type": "video",
+          "thumbnail_url": "https://storage.example.com/thumbs/ep1.jpg",
+          "position": 1,
+          "product": {
+            "name": "Satoshi's Ramen - Full Episode",
+            "price_cents": 200,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "name": "Episode 2: Lightning Tacos",
+          "description": "We prepare street tacos and explore the Lightning Network.",
+          "source_url": "https://storage.example.com/videos/ep2-lightning-tacos.mp4",
+          "media_type": "video",
+          "thumbnail_url": "https://storage.example.com/thumbs/ep2.jpg",
+          "position": 2,
+          "product": {
+            "name": "Lightning Tacos - Full Episode",
+            "price_cents": 200,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "name": "Bonus: Kitchen Setup Guide",
+          "description": "A free guide to setting up your kitchen for the show.",
+          "source_url": "https://storage.example.com/videos/bonus-kitchen-setup.mp4",
+          "media_type": "video",
+          "thumbnail_url": "",
+          "position": 3
+        }
+      ]
+    },
+    {
+      "slug": "btc-podcast",
+      "name": "The Bitcoin Podcast",
+      "bio": "Weekly interviews with builders in the Bitcoin ecosystem.",
+      "category_slug": "entertainment",
+      "nsfw": false,
+      "social_links": {
+        "twitter": "https://x.com/btcpodcast"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "name": "S1E1: The Future of Money",
+          "description": "Our pilot episode exploring why Bitcoin matters.",
+          "source_url": "https://storage.example.com/audio/s1e1-future-of-money.mp3",
+          "media_type": "podcast",
+          "thumbnail_url": "",
+          "position": 1,
+          "product": {
+            "name": "S1E1 - Premium Audio",
+            "price_cents": 100,
+            "currency": "USD",
+            "access_duration_seconds": 0
+          }
+        }
+      ]
+    }
+  ]
+}

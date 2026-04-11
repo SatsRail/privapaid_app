@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrivaPaid — Auth Screens Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pp-bg: #08080d;
+    --pp-card: #111119;
+    --pp-accent: #c9506b;
+    --pp-accent-light: #d4738a;
+    --pp-accent-glow: rgba(201, 80, 107, 0.10);
+    --pp-white: #ffffff;
+    --pp-gray-100: #f0f0f5;
+    --pp-gray-300: #b8b8c8;
+    --pp-gray-500: #80809a;
+    --pp-gray-700: #222233;
+    --pp-border: rgba(255, 255, 255, 0.06);
+    --pp-green: #34d399;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  body {
+    background: #e8e8f0;
+    font-family: var(--font-body);
+    color: var(--pp-white);
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+
+  /* ── Section headers ── */
+  .section-title {
+    text-align: center; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: #555; margin: 48px 0 32px;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+  }
+  .section-title::before, .section-title::after {
+    content: ''; height: 1px; width: 60px; background: var(--pp-border);
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* ── Layout ── */
+  .screens-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+
+  .screen {
+    width: 100%;
+    max-width: 380px;
+    position: relative;
+  }
+
+  .screen-label {
+    text-align: center; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: #555; margin-bottom: 16px;
+    padding: 4px 12px; border-radius: 980px;
+    border: 1px solid var(--pp-border);
+    display: inline-block;
+  }
+
+  /* ── Shared components ── */
+  @keyframes logoPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 48px var(--pp-accent-glow), 0 0 96px var(--pp-accent-glow); }
+    50% { transform: scale(1.02); box-shadow: 0 0 64px rgba(201,80,107,0.15), 0 0 128px rgba(201,80,107,0.08); }
+  }
+
+  .logo-wrap {
+    width: 72px; height: 72px;
+    margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 18px;
+    background: rgba(201, 80, 107, 0.08);
+    box-shadow: 0 0 48px var(--pp-accent-glow), 0 0 96px var(--pp-accent-glow);
+    animation: logoPulse 4s ease-in-out infinite;
+    overflow: hidden;
+  }
+  .logo-wrap img { width: 56px; height: 56px; object-fit: contain; }
+
+  .logo-sm {
+    width: 48px; height: 48px;
+    margin: 0 auto 14px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .logo-sm img { width: 100%; height: 100%; object-fit: contain; }
+
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 32px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .header h1 span { color: var(--pp-accent); }
+  .header p { font-size: 14px; color: var(--pp-gray-500); margin-top: 8px; }
+
+  .card {
+    background: var(--pp-card);
+    border: 1px solid var(--pp-border);
+    border-radius: 20px;
+    padding: 32px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.2);
+  }
+
+  .modal-card {
+    background: var(--pp-card);
+    border: 1px solid var(--pp-border);
+    border-radius: 24px;
+    padding: 36px 32px 32px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255,255,255,0.05);
+  }
+
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block; font-size: 13px; font-weight: 500;
+    color: var(--pp-gray-300); margin-bottom: 8px; letter-spacing: 0.01em;
+  }
+  .field input {
+    width: 100%; padding: 14px 16px;
+    font-size: 14px; font-family: var(--font-body);
+    color: var(--pp-white); background: var(--pp-bg);
+    border: 1px solid var(--pp-border); border-radius: 12px;
+    outline: none;
+  }
+  .field input:focus {
+    border-color: var(--pp-accent);
+    box-shadow: 0 0 0 3px var(--pp-accent-glow);
+  }
+  .field input::placeholder { color: var(--pp-gray-500); }
+  .field .helper { font-size: 12px; color: var(--pp-gray-500); margin-top: 6px; }
+
+  .btn {
+    width: 100%;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 14px 32px;
+    font-size: 14px; font-weight: 600; font-family: var(--font-body);
+    letter-spacing: 0.01em; border-radius: 980px; cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .btn-primary { background: var(--pp-accent); color: var(--pp-white); border: none; }
+  .btn-primary:hover { background: var(--pp-accent-light); transform: scale(1.02); box-shadow: 0 4px 24px var(--pp-accent-glow); }
+  .btn-secondary { background: transparent; color: var(--pp-gray-300); border: 1px solid var(--pp-border); }
+  .btn-secondary:hover { background: rgba(255,255,255,0.04); }
+
+  .link { font-size: 13px; color: var(--pp-gray-500); text-align: center; margin-top: 20px; }
+  .link a { color: var(--pp-accent); text-decoration: none; font-weight: 500; }
+  .link a:hover { text-decoration: underline; }
+
+  .signup-link { font-size: 12px; color: var(--pp-gray-500); text-align: center; margin-top: 16px; }
+  .signup-link a { color: var(--pp-accent); text-decoration: none; font-weight: 500; }
+  .signup-link a:hover { text-decoration: underline; }
+
+  .merchant-card {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 20px; border-radius: 14px;
+    background: rgba(52, 211, 153, 0.04);
+    border: 1px solid rgba(52, 211, 153, 0.12);
+  }
+  .merchant-card img {
+    width: 44px; height: 44px; border-radius: 10px;
+    object-fit: contain; background: var(--pp-bg); padding: 4px;
+  }
+  .merchant-card .name { font-size: 15px; font-weight: 600; }
+  .merchant-card .status {
+    font-size: 12px; color: var(--pp-green); font-weight: 500;
+    margin-top: 2px; display: flex; align-items: center; gap: 4px;
+  }
+
+  .footer { text-align: center; font-size: 11px; color: var(--pp-gray-500); margin-top: 32px; letter-spacing: 0.02em; }
+  .footer strong { color: var(--pp-gray-300); font-weight: 500; }
+
+  /* ── Full-screen setup bg ── */
+  .setup-bg {
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(201,80,107,0.06) 0%, transparent 70%), var(--pp-bg);
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+  }
+
+  .admin-bg {
+    background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(201,80,107,0.15) 0%, transparent 70%), #0e0e18;
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ── Modal mockup (preview only — simulates the backdrop blur overlay) ── */
+  .modal-bg {
+    background: #1a1a2e;
+    border-radius: 16px;
+    padding: 48px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .modal-header { text-align: center; margin-bottom: 28px; }
+  .modal-header h2 {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
+  }
+  .modal-header p { font-size: 13px; color: var(--pp-gray-500); margin-top: 4px; }
+
+  .tab-switch { font-size: 12px; color: var(--pp-gray-500); margin-top: 8px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ═══════ SETUP ═══════ -->
+<div class="section-title">Setup</div>
+<div class="screens-row">
+  <div class="screen">
+    <div style="text-align:center"><span class="screen-label">Before connect</span></div>
+    <div class="setup-bg">
+      <div class="logo-wrap"><img src="/logo.png" alt="PrivaPaid"></div>
+      <h1 style="font-family:var(--font-display);font-size:32px;font-weight:700;letter-spacing:-0.02em">Priva<span style="color:var(--pp-accent)">Paid</span></h1>
+      <p style="font-size:14px;color:var(--pp-gray-500);margin:8px 0 32px">Connect your SatsRail merchant account</p>
+      <div class="card" style="text-align:left">
+        <div class="field">
+          <label>SatsRail API Key</label>
+          <input type="password" placeholder="sk_live_...">
+          <p class="helper">From your SatsRail merchant dashboard</p>
+        </div>
+        <button class="btn btn-secondary">Connect Account</button>
+        <p class="signup-link">Don't have an account? <a href="#">Create a SatsRail account</a></p>
+      </div>
+      <p class="footer">Powered by <strong>SatsRail</strong></p>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div style="text-align:center"><span class="screen-label">After connect</span></div>
+    <div class="setup-bg">
+      <div class="logo-wrap"><img src="/logo.png" alt="PrivaPaid"></div>
+      <h1 style="font-family:var(--font-display);font-size:32px;font-weight:700;letter-spacing:-0.02em">Priva<span style="color:var(--pp-accent)">Paid</span></h1>
+      <p style="font-size:14px;color:var(--pp-gray-500);margin:8px 0 32px">Connect your SatsRail merchant account</p>
+      <div class="card" style="text-align:left">
+        <div class="field">
+          <label>SatsRail API Key</label>
+          <input type="password" value="sk_live_abc123def456789">
+          <p class="helper">From your SatsRail merchant dashboard</p>
+        </div>
+        <div class="merchant-card">
+          <img src="/logo.png" alt="Luna Veil Studio">
+          <div>
+            <div class="name">Luna Veil Studio</div>
+            <div class="status">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="#34d399" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Connected
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:24px">
+        <button class="btn btn-primary">Complete Setup</button>
+        <p style="font-size:12px;color:var(--pp-gray-500);margin-top:12px;text-align:center">After setup, sign in with your SatsRail credentials.</p>
+      </div>
+      <p class="footer">Powered by <strong>SatsRail</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ LOGIN ═══════ -->
+<div class="section-title">Login</div>
+<div class="screens-row">
+  <div class="screen">
+    <div style="text-align:center"><span class="screen-label">Customer (modal)</span></div>
+    <div class="modal-bg" style="min-height:auto">
+      <div class="modal-card" style="width:100%">
+        <div class="modal-header">
+          <div class="logo-sm"><img src="/logo.png" alt="Luna Veil Studio"></div>
+          <h2>Sign In</h2>
+          <p>Luna Veil Studio</p>
+        </div>
+        <div class="field">
+          <label>Nickname</label>
+          <input type="text" placeholder="your_nickname">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" placeholder="••••••">
+        </div>
+        <button class="btn btn-primary">Sign In</button>
+        <p class="link">Don't have an account? <a href="#">Sign up</a></p>
+        <p class="tab-switch">Staff login →</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen">
+    <div style="text-align:center"><span class="screen-label">Staff (simple, utilitarian)</span></div>
+    <div class="admin-bg" style="background:var(--pp-bg);border:1px solid var(--pp-border)">
+      <div class="logo-sm"><img src="/logo.png" alt="Luna Veil Studio"></div>
+      <h2 style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--pp-gray-300);letter-spacing:-0.01em">Luna Veil Studio</h2>
+      <p style="font-size:12px;color:var(--pp-gray-500);margin:4px 0 28px;text-transform:uppercase;letter-spacing:0.06em">Staff Login</p>
+      <div class="card" style="text-align:left;border-radius:16px;padding:28px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.2)">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" placeholder="••••••">
+        </div>
+        <button class="btn btn-primary">Sign In</button>
+      </div>
+      <p class="link" style="margin-top:20px">← Customer login</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SIGNUP ═══════ -->
+<div class="section-title">Sign Up</div>
+<div class="screens-row" style="justify-content:center">
+  <div class="screen">
+    <div style="text-align:center"><span class="screen-label">Customer signup (modal)</span></div>
+    <div class="modal-bg" style="min-height:auto">
+      <div class="modal-card" style="width:100%">
+        <div class="modal-header">
+          <div class="logo-sm"><img src="/logo.png" alt="Luna Veil Studio"></div>
+          <h2>Create Account</h2>
+          <p>Pick a nickname. No email required.</p>
+        </div>
+        <div class="field">
+          <label>Nickname</label>
+          <input type="text" value="cool_viewer_42">
+          <p class="helper" style="color:var(--pp-green)">✓ Available</p>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" value="••••••••">
+        </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <input type="password" value="••••••••">
+        </div>
+        <button class="btn btn-primary">Create Account</button>
+        <p class="link">Already have an account? <a href="#">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

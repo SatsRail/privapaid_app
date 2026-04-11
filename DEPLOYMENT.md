@@ -1,0 +1,307 @@
+# Deployment Guide
+
+Production deployment guide for PrivaPaid. For local development, see [README.md](README.md).
+
+## Prerequisites
+
+- A SatsRail merchant account with API keys
+- A domain name pointed to your server
+- Docker and Docker Compose installed on the server
+
+---
+
+## Option A: EC2 + Docker Compose (Recommended)
+
+The simplest production setup. One small EC2 instance runs everything.
+
+### 1. Launch an EC2 Instance
+
+- **AMI:** Amazon Linux 2023 or Ubuntu 24.04
+- **Instance type:** `t3.small` (2 vCPU, 2 GB RAM) — plenty for most deployments
+- **Storage:** 20 GB gp3
+- **Security group:** Open ports 22 (SSH), 80 (HTTP), 443 (HTTPS)
+- **Elastic IP:** Allocate and associate one for stable DNS
+
+**Estimated cost:** ~$15/month
+
+### 2. Install Docker
+
+```bash
+# Amazon Linux 2023
+sudo dnf install -y docker
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+
+# Install Docker Compose plugin
+sudo mkdir -p /usr/local/lib/docker/cli-plugins
+sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Log out and back in for group changes
+exit
+```
+
+### 3. Deploy the App
+
+```bash
+git clone https://github.com/SatsRail/media.git && cd media
+cp .env.docker.example .env
+```
+
+Edit `.env` with your production values:
+
+```bash
+MONGODB_URI=mongodb://admin:YOUR_STRONG_PASSWORD@mongo:27017/media?authSource=admin
+MONGO_INITDB_ROOT_USERNAME=admin
+MONGO_INITDB_ROOT_PASSWORD=YOUR_STRONG_PASSWORD
+
+NEXTAUTH_URL=https://yourdomain.com
+NEXTAUTH_SECRET=$(openssl rand -base64 32)
+
+INSTANCE_NAME=YourBrand
+INSTANCE_DOMAIN=yourdomain.com
+SATSRAIL_API_URL=https://satsrail.com/api/v1
+
+SK_ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+SATSRAIL_WEBHOOK_SECRET=your-webhook-secret
+
+ADMIN_EMAIL=you@example.com
+ADMIN_NAME=Admin
+ADMIN_PASSWORD=a-strong-password
+```
+
+Start with production overrides:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose exec app sh scripts/docker-seed.sh
+```
+
+### 4. Reverse Proxy with Nginx + SSL
+
+Install Nginx and Certbot:
+
+```bash
+sudo dnf install -y nginx
+sudo systemctl enable --now nginx
+
+# Install Certbot
+sudo dnf install -y certbot python3-certbot-nginx
+```
+
+Create `/etc/nginx/conf.d/media.conf`:
+
+```nginx
+server {
+    server_name yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d yourdomain.com
+```
+
+Certbot auto-renews via systemd timer.
+
+---
+
+## Option B: Elastic Beanstalk Docker
+
+For teams already on AWS Elastic Beanstalk.
+
+### 1. Create `Dockerrun.aws.json`
+
+```json
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "ghcr.io/satsrail/media:latest",
+    "Update": "true"
+  },
+  "Ports": [
+    { "ContainerPort": 3000, "HostPort": 3000 }
+  ]
+}
+```
+
+### 2. Create EB Environment
+
+```bash
+eb init media-app --platform "Docker" --region us-east-1
+eb create media-prod --single --instance-type t3.small
+```
+
+### 3. Configure Environment Variables
+
+Set all `.env` variables via EB environment properties:
+
+```bash
+eb setenv MONGODB_URI="mongodb+srv://..." NEXTAUTH_URL="https://..." ...
+```
+
+### 4. MongoDB
+
+Use **MongoDB Atlas** (not the Docker Compose mongo service):
+- Free tier (M0) handles small deployments
+- Shared clusters start at $9/month for production
+- EB doesn't support persistent volumes for local MongoDB
+
+---
+
+## Option C: Railway
+
+The fastest path to production. Railway handles Docker builds, MongoDB, and SSL automatically.
+
+### 1. Deploy
+
+Click the button in [README.md](README.md) or visit [railway.com/deploy](https://railway.com/deploy/j2B0mN?referralCode=6xvEI7).
+
+Railway creates two services:
+- **App** — built from the Dockerfile in this repo
+- **MongoDB** — Railway plugin, automatically connected via `MONGODB_URI`
+
+### 2. Set Environment Variables
+
+Railway prompts for these during deploy:
+
+| Variable | Value |
+|----------|-------|
+| `ADMIN_EMAIL` | Your email |
+| `ADMIN_NAME` | Your name |
+| `ADMIN_PASSWORD` | Strong password |
+| `NEXTAUTH_URL` | Your Railway URL (e.g. `https://stream-production-xxxx.up.railway.app`) |
+| `SATSRAIL_API_URL` | `https://satsrail.com/api/v1` |
+
+Secrets (`NEXTAUTH_SECRET`, `SK_ENCRYPTION_KEY`) are auto-generated on first boot.
+
+### 3. Seed the Database
+
+In Railway's shell (Service > Shell tab):
+
+```bash
+sh scripts/docker-seed.sh
+```
+
+### 4. Custom Domain (Optional)
+
+Settings > Networking > Custom Domain. Railway handles SSL automatically.
+
+**Estimated cost:** Hobby plan $5/month + usage (~$5-10/month for small instances).
+
+---
+
+## MongoDB: Atlas vs Local
+
+| | Atlas (Cloud) | Local (Docker Compose) |
+|---|---|---|
+| **Setup** | Create cluster on atlas.mongodb.com | Included in docker-compose.yml |
+| **Backups** | Automatic, point-in-time | Manual (see below) |
+| **Scaling** | Click to scale | Limited to server resources |
+| **Cost** | Free tier available, $9+/month for prod | Free (uses server disk) |
+| **Best for** | Production, Elastic Beanstalk | Development, small self-hosted |
+
+To use Atlas: replace `MONGODB_URI` in `.env` with your Atlas connection string and remove the `mongo` service from `docker-compose.yml`.
+
+---
+
+## Backups
+
+### MongoDB (Docker Compose)
+
+Create a daily backup cron job:
+
+```bash
+# /etc/cron.daily/media-backup
+#!/bin/bash
+BACKUP_DIR=/home/ec2-user/backups/$(date +%Y%m%d)
+mkdir -p "$BACKUP_DIR"
+docker compose -f /home/ec2-user/media/docker-compose.yml exec -T mongo \
+  mongodump --authenticationDatabase admin \
+  -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" \
+  --archive > "$BACKUP_DIR/media.archive"
+
+# Keep last 30 days
+find /home/ec2-user/backups -maxdepth 1 -mtime +30 -exec rm -rf {} +
+```
+
+```bash
+sudo chmod +x /etc/cron.daily/media-backup
+```
+
+### Restore
+
+```bash
+docker compose exec -T mongo mongorestore --authenticationDatabase admin \
+  -u admin -p YOUR_PASSWORD --archive < backups/20260315/media.archive
+```
+
+---
+
+## Upgrading
+
+Pull the latest image and restart:
+
+```bash
+cd media
+git pull
+docker compose build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+Or if using the published image:
+
+```bash
+docker pull ghcr.io/satsrail/media:latest
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+---
+
+## Monitoring
+
+### Health Check
+
+```bash
+curl https://yourdomain.com/api/health
+# { "status": "ok", "mongo": "connected", "satsrail": "reachable" }
+```
+
+### Logs
+
+```bash
+docker compose logs -f app     # App logs
+docker compose logs -f mongo   # MongoDB logs
+```
+
+### Docker Status
+
+```bash
+docker compose ps              # Container status + health
+docker stats                   # CPU/memory usage
+```
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| App won't start | Missing env vars | Check `docker compose logs app` for errors |
+| MongoDB connection refused | Mongo not ready | Wait for health check, check `docker compose logs mongo` |
+| Health check returns 503 | MongoDB or SatsRail down | Check `MONGODB_URI` and `SATSRAIL_API_URL` |
+| SSL not working | Certbot didn't run | Run `sudo certbot --nginx -d yourdomain.com` |
+| Payments not working | Wrong API keys | Verify `SK_ENCRYPTION_KEY` and SatsRail merchant config |
+| Seed script fails | Missing admin env vars | Set `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` in `.env` |

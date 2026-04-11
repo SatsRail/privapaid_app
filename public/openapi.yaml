@@ -1,0 +1,1254 @@
+openapi: 3.0.3
+info:
+  title: PrivaPaid API
+  description: |
+    PrivaPaid is an open-source white-label payment platform for digital content,
+    powered by SatsRail. This API serves both the storefront (public/customer endpoints)
+    and the admin dashboard.
+
+    ## Authentication
+
+    **Admin routes** (`/api/admin/*`): Require a valid NextAuth session with an admin role.
+    Authentication is delegated to SatsRail (merchant team login).
+
+    **Customer routes** (`/api/customer/*`): Require a valid NextAuth session with `role: "customer"`.
+
+    **Public routes**: No authentication required.
+  version: 1.0.0
+  license:
+    name: MIT
+
+servers:
+  - url: /api
+    description: Relative to deployment
+
+tags:
+  - name: Setup
+    description: First-run instance setup
+  - name: Checkout
+    description: Payment and checkout flow
+  - name: Customer
+    description: Customer account operations
+  - name: Media
+    description: Public media and interaction endpoints
+  - name: Admin - Categories
+    description: Category management (admin)
+  - name: Admin - Channels
+    description: Channel management (admin)
+  - name: Admin - Media
+    description: Media management (admin)
+  - name: Admin - Settings
+    description: Instance settings (owner only)
+  - name: Admin - Team
+    description: Admin team management (owner only)
+  - name: Health
+    description: Health check
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  # ─── Setup ──────────────────────────────────────────────
+
+  /setup:
+    post:
+      tags: [Setup]
+      summary: Complete first-run setup
+      description: Configures the instance on first run. Cannot be called again after setup is complete.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupRequest"
+      responses:
+        "201":
+          description: Setup completed
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          description: Setup already completed
+
+  /setup/status:
+    get:
+      tags: [Setup]
+      summary: Check if setup is complete
+      responses:
+        "200":
+          description: Setup status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  setup_completed:
+                    type: boolean
+
+  /setup/verify-key:
+    post:
+      tags: [Setup]
+      summary: Verify a SatsRail API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [api_key]
+              properties:
+                api_key:
+                  type: string
+      responses:
+        "200":
+          description: Key is valid, returns merchant info
+
+  # ─── Checkout ───────────────────────────────────────────
+
+  /checkout:
+    post:
+      tags: [Checkout]
+      summary: Create a checkout session
+      description: Creates a SatsRail order and checkout session for a media product.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                  token:
+                    type: string
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          description: Invalid public key
+        "404":
+          description: Media or channel not found
+
+  # ─── Customer ───────────────────────────────────────────
+
+  /customer/signup:
+    post:
+      tags: [Customer]
+      summary: Register a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerSignupRequest"
+      responses:
+        "201":
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  nickname:
+                    type: string
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          description: Nickname already taken
+
+  /customer/check-nickname:
+    get:
+      tags: [Customer]
+      summary: Check nickname availability
+      parameters:
+        - name: nickname
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Availability result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  available:
+                    type: boolean
+
+  /customer/profile:
+    patch:
+      tags: [Customer]
+      summary: Update customer profile
+      security:
+        - session: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile_image_id:
+                  type: string
+      responses:
+        "200":
+          description: Profile updated
+        "401":
+          description: Unauthorized
+
+  /customer/purchases:
+    get:
+      tags: [Customer]
+      summary: List customer purchases
+      security:
+        - session: []
+      responses:
+        "200":
+          description: Purchase list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  purchases:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Purchase"
+    post:
+      tags: [Customer]
+      summary: Record a purchase
+      security:
+        - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseRequest"
+      responses:
+        "201":
+          description: Purchase recorded
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          description: Already purchased
+
+  /customer/favorites:
+    get:
+      tags: [Customer]
+      summary: List customer favorites
+      security:
+        - session: []
+      responses:
+        "200":
+          description: Favorites list
+
+  # ─── Public Media ───────────────────────────────────────
+
+  /media/{id}/comments:
+    get:
+      tags: [Media]
+      summary: List comments on a media item
+      parameters:
+        - $ref: "#/components/parameters/MediaId"
+      responses:
+        "200":
+          description: Comment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      tags: [Media]
+      summary: Add a comment (requires purchase)
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/MediaId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body:
+                  type: string
+                  maxLength: 2000
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          description: Purchase required to comment
+
+  /media/{id}/flags:
+    post:
+      tags: [Media]
+      summary: Flag media content (requires purchase)
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/MediaId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [flag_type]
+              properties:
+                flag_type:
+                  type: string
+      responses:
+        "201":
+          description: Flag created
+        "409":
+          description: Already flagged
+
+  # ─── Admin - Categories ─────────────────────────────────
+
+  /admin/categories:
+    get:
+      tags: [Admin - Categories]
+      summary: List all categories
+      security:
+        - session: []
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+    post:
+      tags: [Admin - Categories]
+      summary: Create a category
+      security:
+        - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryCreateRequest"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          description: Slug already exists
+
+  /admin/categories/{id}:
+    get:
+      tags: [Admin - Categories]
+      summary: Get a category
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Category detail
+        "404":
+          description: Not found
+    patch:
+      tags: [Admin - Categories]
+      summary: Update a category
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdateRequest"
+      responses:
+        "200":
+          description: Category updated
+        "422":
+          description: Slug already taken
+    delete:
+      tags: [Admin - Categories]
+      summary: Soft-delete a category
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Category deactivated
+
+  /admin/categories/reorder:
+    patch:
+      tags: [Admin - Categories]
+      summary: Reorder categories
+      security:
+        - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderRequest"
+      responses:
+        "200":
+          description: Categories reordered
+
+  # ─── Admin - Channels ───────────────────────────────────
+
+  /admin/channels:
+    get:
+      tags: [Admin - Channels]
+      summary: List channels
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: category_id
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated channel list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Channel"
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  total_pages:
+                    type: integer
+    post:
+      tags: [Admin - Channels]
+      summary: Create a channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelCreateRequest"
+      responses:
+        "201":
+          description: Channel created
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          description: Slug already taken
+
+  /admin/channels/{id}:
+    get:
+      tags: [Admin - Channels]
+      summary: Get channel details
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Channel detail
+        "404":
+          description: Not found
+    patch:
+      tags: [Admin - Channels]
+      summary: Update a channel
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelUpdateRequest"
+      responses:
+        "200":
+          description: Channel updated
+    delete:
+      tags: [Admin - Channels]
+      summary: Soft-delete a channel
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Channel deactivated
+
+  # ─── Admin - Media ──────────────────────────────────────
+
+  /admin/media:
+    get:
+      tags: [Admin - Media]
+      summary: List media items for a channel
+      security:
+        - session: []
+      parameters:
+        - name: channel_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Media list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Media"
+        "422":
+          description: channel_id is required
+    post:
+      tags: [Admin - Media]
+      summary: Create a media item
+      security:
+        - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaCreateRequest"
+      responses:
+        "201":
+          description: Media created
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: Channel not found
+
+  /admin/media/{id}:
+    get:
+      tags: [Admin - Media]
+      summary: Get media item details
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Media detail
+        "404":
+          description: Not found
+    patch:
+      tags: [Admin - Media]
+      summary: Update a media item
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUpdateRequest"
+      responses:
+        "200":
+          description: Media updated
+        "400":
+          $ref: "#/components/responses/ValidationError"
+    delete:
+      tags: [Admin - Media]
+      summary: Delete a media item
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Media deleted (cascade: products, comments, flags)
+
+  /admin/media/reorder:
+    patch:
+      tags: [Admin - Media]
+      summary: Reorder media items
+      security:
+        - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderRequest"
+      responses:
+        "200":
+          description: Media reordered
+
+  /admin/media/{id}/create-product:
+    post:
+      tags: [Admin - Media]
+      summary: Create a SatsRail product for a media item
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "201":
+          description: Product created and linked
+
+  # ─── Admin - Settings ───────────────────────────────────
+
+  /admin/settings:
+    get:
+      tags: [Admin - Settings]
+      summary: Get instance settings
+      security:
+        - session: []
+      responses:
+        "200":
+          description: Settings object
+        "404":
+          description: Settings not found
+    put:
+      tags: [Admin - Settings]
+      summary: Update instance settings
+      security:
+        - session: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdateRequest"
+      responses:
+        "200":
+          description: Settings updated
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  # ─── Admin - Team ───────────────────────────────────────
+
+  /admin/admins:
+    get:
+      tags: [Admin - Team]
+      summary: List admin team members
+      description: Owner only.
+      security:
+        - session: []
+      responses:
+        "200":
+          description: Admin list
+        "403":
+          description: Forbidden (not owner)
+    post:
+      tags: [Admin - Team]
+      summary: Create an admin
+      description: Owner only. Cannot create owners.
+      security:
+        - session: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCreateRequest"
+      responses:
+        "201":
+          description: Admin created
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "422":
+          description: Email already in use
+
+  /admin/admins/{id}:
+    get:
+      tags: [Admin - Team]
+      summary: Get admin details
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Admin detail
+        "404":
+          description: Not found
+    patch:
+      tags: [Admin - Team]
+      summary: Update an admin
+      security:
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateRequest"
+      responses:
+        "200":
+          description: Admin updated
+        "422":
+          description: Cannot deactivate self
+
+  # ─── Images ─────────────────────────────────────────────
+
+  /images:
+    post:
+      tags: [Media]
+      summary: Upload an image
+      description: Validates magic bytes and enforces 8192x8192 max dimensions.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Image uploaded
+        "400":
+          description: Invalid file type or dimensions exceed limit
+
+  /images/{id}:
+    get:
+      tags: [Media]
+      summary: Serve an image by ID
+      parameters:
+        - $ref: "#/components/parameters/ResourceId"
+      responses:
+        "200":
+          description: Image binary
+        "404":
+          description: Not found
+
+  # ─── Webhooks ───────────────────────────────────────────
+
+  /webhooks/satsrail:
+    post:
+      tags: [Health]
+      summary: SatsRail webhook receiver
+      description: |
+        Receives payment events from SatsRail. Validates timestamp (5-min tolerance)
+        and enforces idempotency via WebhookEvent tracking.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Webhook processed
+        "400":
+          description: Invalid or stale timestamp
+        "409":
+          description: Duplicate event (idempotency)
+
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: NextAuth session cookie
+
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: MongoDB ObjectId
+    MediaId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Media item ID
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Validation failed
+              issues:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    path:
+                      type: string
+                    message:
+                      type: string
+
+  schemas:
+    # ─── Request schemas ──────────────────────────────────
+
+    SetupRequest:
+      type: object
+      required: [instance_name, satsrail_api_key, merchant_id]
+      properties:
+        instance_name:
+          type: string
+          maxLength: 100
+        logo_url:
+          type: string
+          format: uri
+        nsfw_enabled:
+          type: boolean
+        theme_primary:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        satsrail_api_key:
+          type: string
+        merchant_id:
+          type: string
+        merchant_name:
+          type: string
+          maxLength: 100
+        merchant_locale:
+          type: string
+          maxLength: 10
+
+    CheckoutRequest:
+      type: object
+      required: [media_id, product_id, pk_live]
+      properties:
+        media_id:
+          type: string
+        product_id:
+          type: string
+        pk_live:
+          type: string
+
+    CustomerSignupRequest:
+      type: object
+      required: [nickname, password]
+      properties:
+        nickname:
+          type: string
+          minLength: 2
+          maxLength: 30
+          pattern: "^[a-zA-Z0-9_]+$"
+        password:
+          type: string
+          minLength: 12
+          description: Must include uppercase, lowercase, number, and special character
+
+    PurchaseRequest:
+      type: object
+      required: [order_id, product_id]
+      properties:
+        order_id:
+          type: string
+        product_id:
+          type: string
+
+    CategoryCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        slug:
+          type: string
+          pattern: "^[a-z0-9-]+$"
+        position:
+          type: integer
+          minimum: 0
+        active:
+          type: boolean
+
+    CategoryUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        slug:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+        active:
+          type: boolean
+
+    ChannelCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        slug:
+          type: string
+        bio:
+          type: string
+          maxLength: 2000
+        category_id:
+          type: string
+          nullable: true
+        nsfw:
+          type: boolean
+        theme:
+          type: string
+        mode:
+          type: string
+          enum: [managed, standalone]
+        profile_image_url:
+          type: string
+          format: uri
+        profile_image_id:
+          type: string
+        social_links:
+          type: object
+          additionalProperties:
+            type: string
+        satsrail_pk_live:
+          type: string
+        satsrail_sk_live:
+          type: string
+
+    ChannelUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        bio:
+          type: string
+        category_id:
+          type: string
+          nullable: true
+        nsfw:
+          type: boolean
+        theme:
+          type: string
+        mode:
+          type: string
+          enum: [managed, standalone]
+        active:
+          type: boolean
+        is_live:
+          type: boolean
+        stream_url:
+          type: string
+          format: uri
+        satsrail_pk_live:
+          type: string
+        satsrail_sk_live:
+          type: string
+
+    MediaCreateRequest:
+      type: object
+      required: [channel_id, name, source_url]
+      properties:
+        channel_id:
+          type: string
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        source_url:
+          type: string
+        media_type:
+          type: string
+          enum: [video, image, audio, text]
+        thumbnail_url:
+          type: string
+        thumbnail_id:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+
+    MediaUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        source_url:
+          type: string
+        media_type:
+          type: string
+          enum: [video, image, audio, text]
+        thumbnail_url:
+          type: string
+        thumbnail_id:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+
+    SettingsUpdateRequest:
+      type: object
+      properties:
+        instance_name:
+          type: string
+          maxLength: 100
+        logo_url:
+          type: string
+          format: uri
+        logo_image_id:
+          type: string
+        about_text:
+          type: string
+          maxLength: 5000
+        nsfw_enabled:
+          type: boolean
+        adult_disclaimer:
+          type: string
+          maxLength: 2000
+        theme_primary:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        theme_bg:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        theme_bg_secondary:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        theme_text:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        theme_text_secondary:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        theme_heading:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        theme_border:
+          type: string
+          pattern: "^#[0-9a-fA-F]{6}$"
+        theme_font:
+          type: string
+          maxLength: 100
+
+    AdminCreateRequest:
+      type: object
+      required: [email, name, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          maxLength: 100
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: [admin, moderator]
+
+    AdminUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        role:
+          type: string
+          enum: [admin, moderator]
+        active:
+          type: boolean
+        password:
+          type: string
+          minLength: 8
+
+    ReorderRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [id, position]
+            properties:
+              id:
+                type: string
+              position:
+                type: integer
+                minimum: 0
+
+    # ─── Response schemas ─────────────────────────────────
+
+    Category:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        position:
+          type: integer
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Channel:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        bio:
+          type: string
+        category_id:
+          type: string
+          nullable: true
+        nsfw:
+          type: boolean
+        theme:
+          type: string
+        mode:
+          type: string
+        active:
+          type: boolean
+        media_count:
+          type: integer
+        satsrail_pk_live:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Media:
+      type: object
+      properties:
+        _id:
+          type: string
+        channel_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        source_url:
+          type: string
+        media_type:
+          type: string
+          enum: [video, image, audio, text]
+        thumbnail_url:
+          type: string
+        position:
+          type: integer
+        comments_count:
+          type: integer
+        flags_count:
+          type: integer
+        product_ids:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Comment:
+      type: object
+      properties:
+        _id:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        customer:
+          type: object
+          properties:
+            nickname:
+              type: string
+
+    Purchase:
+      type: object
+      properties:
+        satsrail_order_id:
+          type: string
+        satsrail_product_id:
+          type: string
+        purchased_at:
+          type: string
+          format: date-time

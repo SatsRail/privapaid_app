@@ -1,0 +1,102 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+vi.mock("@/i18n", () => ({
+  t: (_locale: string, key: string, vars?: Record<string, unknown>) => {
+    if (vars?.count !== undefined) return `${key}:${vars.count}`;
+    return key;
+  },
+}));
+
+vi.mock("@/components/ui/Badge", () => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <span data-testid="badge">{children}</span>
+  ),
+}));
+
+import MediaHeader from "@/components/MediaHeader";
+import type { SerializedProduct } from "@/app/c/[slug]/[mediaId]/types";
+
+const makeProduct = (overrides: Partial<SerializedProduct> = {}): SerializedProduct => ({
+  productId: "p1",
+  encryptedBlob: "blob",
+  ...overrides,
+});
+
+describe("MediaHeader", () => {
+  const baseProps = {
+    name: "Test Media",
+    mediaType: "video",
+    products: [] as SerializedProduct[],
+    viewsCount: 0,
+    commentsCount: 0,
+    locale: "en",
+  };
+
+  it("renders the media name as h1", () => {
+    render(<MediaHeader {...baseProps} />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Test Media");
+  });
+
+  it("renders the media type badge", () => {
+    render(<MediaHeader {...baseProps} />);
+    expect(screen.getByTestId("badge")).toHaveTextContent("video");
+  });
+
+  it("shows no price pill when there are no products", () => {
+    const { container } = render(<MediaHeader {...baseProps} />);
+    // No price pill rendered — only badge inside the flex container
+    const spans = container.querySelectorAll(".rounded-full");
+    expect(spans.length).toBe(0);
+  });
+
+  it("shows no price pill when products lack prices", () => {
+    const products = [makeProduct({ priceCents: undefined })];
+    const { container } = render(<MediaHeader {...baseProps} products={products} />);
+    const spans = container.querySelectorAll(".rounded-full");
+    expect(spans.length).toBe(0);
+  });
+
+  it("shows formatted price for a single product", () => {
+    const products = [makeProduct({ priceCents: 500, currency: "USD" })];
+    render(<MediaHeader {...baseProps} products={products} />);
+    expect(screen.getByText("$5")).toBeInTheDocument();
+  });
+
+  it("shows price with decimals when not whole dollars", () => {
+    const products = [makeProduct({ priceCents: 999, currency: "USD" })];
+    render(<MediaHeader {...baseProps} products={products} />);
+    expect(screen.getByText("$9.99")).toBeInTheDocument();
+  });
+
+  it("shows 'from' prefix with lowest price for multiple products", () => {
+    const products = [
+      makeProduct({ productId: "p1", priceCents: 1000, currency: "USD" }),
+      makeProduct({ productId: "p2", priceCents: 500, currency: "USD" }),
+    ];
+    render(<MediaHeader {...baseProps} products={products} />);
+    expect(screen.getByText(/viewer\.media\.from/)).toBeInTheDocument();
+    expect(screen.getByText(/\$5/)).toBeInTheDocument();
+  });
+
+  it("hides views when count is 0", () => {
+    render(<MediaHeader {...baseProps} viewsCount={0} />);
+    expect(screen.queryByText(/viewer\.media\.views/)).not.toBeInTheDocument();
+  });
+
+  it("shows views when count is greater than 0", () => {
+    render(<MediaHeader {...baseProps} viewsCount={42} />);
+    expect(screen.getByText("viewer.media.views:42")).toBeInTheDocument();
+  });
+
+  it("hides comments when count is 0", () => {
+    render(<MediaHeader {...baseProps} commentsCount={0} />);
+    expect(screen.queryByText(/viewer\.media\.comments/)).not.toBeInTheDocument();
+  });
+
+  it("shows comments when count is greater than 0", () => {
+    render(<MediaHeader {...baseProps} commentsCount={7} />);
+    expect(screen.getByText("viewer.media.comments:7")).toBeInTheDocument();
+  });
+});

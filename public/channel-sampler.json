@@ -1,0 +1,253 @@
+{
+  "version": "1.0",
+  "media": [
+    {
+      "ref": 1,
+      "name": "YouTube — Standard Watch URL",
+      "description": "Big Buck Bunny on YouTube via standard watch URL. Tests tryYouTubeEmbed() with /watch?v= path.",
+      "source_url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      "media_type": "video",
+      "thumbnail_url": "https://img.youtube.com/vi/aqz-KE-bpKQ/hqdefault.jpg",
+      "position": 1,
+      "product": {
+        "name": "YouTube — Standard Watch URL",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 2,
+      "name": "YouTube — Short Link (youtu.be)",
+      "description": "Same video via youtu.be short link. Tests tryYouTubeEmbed() with youtu.be hostname.",
+      "source_url": "https://youtu.be/aqz-KE-bpKQ",
+      "media_type": "video",
+      "thumbnail_url": "https://img.youtube.com/vi/aqz-KE-bpKQ/hqdefault.jpg",
+      "position": 2,
+      "product": {
+        "name": "YouTube — Short Link (youtu.be)",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 3,
+      "name": "YouTube — Shorts",
+      "description": "A YouTube Short. Tests tryYouTubeEmbed() with /shorts/ path.",
+      "source_url": "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+      "media_type": "video",
+      "thumbnail_url": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      "position": 3,
+      "product": {
+        "name": "YouTube — Shorts",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 4,
+      "name": "Vimeo",
+      "description": "Public Vimeo video. Tests tryOtherEmbeds() Vimeo branch converting to player.vimeo.com/video/ embed.",
+      "source_url": "https://vimeo.com/76979871",
+      "media_type": "video",
+      "thumbnail_url": "https://picsum.photos/seed/vimeo/640/360",
+      "position": 4,
+      "product": {
+        "name": "Vimeo",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 5,
+      "name": "Dailymotion",
+      "description": "Public Dailymotion video. Tests tryOtherEmbeds() Dailymotion branch converting to /embed/video/ URL.",
+      "source_url": "https://www.dailymotion.com/video/x2cn987",
+      "media_type": "video",
+      "thumbnail_url": "https://picsum.photos/seed/dailymotion/640/360",
+      "position": 5,
+      "product": {
+        "name": "Dailymotion",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 6,
+      "name": "Twitch — Channel (Live)",
+      "description": "Twitch live channel embed. Tests tryOtherEmbeds() Twitch channel branch. Will only show content if the channel is live.",
+      "source_url": "https://www.twitch.tv/twitch",
+      "media_type": "video",
+      "thumbnail_url": "https://picsum.photos/seed/twitch/640/360",
+      "position": 6,
+      "product": {
+        "name": "Twitch — Channel (Live)",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 7,
+      "name": "Bunny Stream",
+      "description": "Bunny.net Stream embed via iframe.mediadelivery.net. Tests isEmbedUrl() match on mediadelivery.net hostname.",
+      "source_url": "https://iframe.mediadelivery.net/embed/197133/dc48a09e-d9bb-420a-83d7-72dc2304c034",
+      "media_type": "video",
+      "thumbnail_url": "https://picsum.photos/seed/bunny-stream/640/360",
+      "position": 7,
+      "product": {
+        "name": "Bunny Stream",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 8,
+      "name": "Cloudflare Stream",
+      "description": "Cloudflare Stream embed via customer subdomain. Tests isEmbedUrl() match on cloudflarestream.com hostname.",
+      "source_url": "https://customer-f33zs165nr7gyfy4.cloudflarestream.com/6b9e68b07dfee8cc2d116e4c51d6a957/iframe",
+      "media_type": "video",
+      "thumbnail_url": "https://picsum.photos/seed/cloudflare-stream/640/360",
+      "position": 8,
+      "product": {
+        "name": "Cloudflare Stream",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 9,
+      "name": "Mux — HLS Stream",
+      "description": "Mux HLS stream via stream.mux.com. Tests isEmbedUrl() and isDirectMediaUrl() for .m3u8.",
+      "source_url": "https://stream.mux.com/VZtzUzGRv02OhRnZCxcNg49OilvolTqdnFLEqBsTwaxH.m3u8",
+      "media_type": "video",
+      "thumbnail_url": "https://picsum.photos/seed/mux-hls/640/360",
+      "position": 9,
+      "product": {
+        "name": "Mux — HLS Stream",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 10,
+      "name": "AWS IVS — Playback",
+      "description": "AWS Interactive Video Service playback stream. Tests isEmbedUrl() match on live-video.net hostname.",
+      "source_url": "https://3d26876b73d7.us-west-2.playback.live-video.net/api/video/v1/us-west-2.913157848533.channel.rkCBS9iD1eyd.m3u8",
+      "media_type": "video",
+      "thumbnail_url": "https://picsum.photos/seed/aws-ivs/640/360",
+      "position": 10,
+      "product": {
+        "name": "AWS IVS — Playback",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 11,
+      "name": "Direct MP4",
+      "description": "Direct .mp4 file URL. Tests isDirectMediaUrl() and native video element rendering.",
+      "source_url": "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "media_type": "video",
+      "thumbnail_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/640px-Big_buck_bunny_poster_big.jpg",
+      "position": 11,
+      "product": {
+        "name": "Direct MP4",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 12,
+      "name": "Direct WebM",
+      "description": "Direct .webm file URL. Tests isDirectMediaUrl() for WebM format.",
+      "source_url": "https://test-videos.co.uk/vids/bigbuckbunny/webm/vp9/360/Big_Buck_Bunny_360_10s_1MB.webm",
+      "media_type": "video",
+      "thumbnail_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/640px-Big_buck_bunny_poster_big.jpg",
+      "position": 12,
+      "product": {
+        "name": "Direct WebM",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 13,
+      "name": "Direct MP3 (Audio)",
+      "description": "Direct .mp3 file URL. Tests isDirectMediaUrl() audio path and native audio element rendering.",
+      "source_url": "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3",
+      "media_type": "audio",
+      "thumbnail_url": "https://picsum.photos/seed/audio-kalimba/640/360",
+      "position": 13,
+      "product": {
+        "name": "Direct MP3 (Audio)",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 14,
+      "name": "Podcast — Episode Sample",
+      "description": "Public domain audio as a podcast episode. Tests podcast media type rendering with dedicated player UI.",
+      "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "media_type": "podcast",
+      "thumbnail_url": "https://picsum.photos/seed/podcast-episode/640/360",
+      "position": 14,
+      "product": {
+        "name": "Podcast — Episode Sample",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 15,
+      "name": "Article — Bitcoin Whitepaper",
+      "description": "The original Bitcoin whitepaper by Satoshi Nakamoto. Tests article media type rendering with PDF content.",
+      "source_url": "https://bitcoin.org/bitcoin.pdf",
+      "media_type": "article",
+      "thumbnail_url": "https://picsum.photos/seed/bitcoin-whitepaper/640/360",
+      "position": 15,
+      "product": {
+        "name": "Article — Bitcoin Whitepaper",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    },
+    {
+      "ref": 16,
+      "name": "Photo Set — Gallery",
+      "description": "A set of images displayed as a gallery. Tests photo_set media type with full preview_image_urls carousel (6 images max).",
+      "source_url": "https://picsum.photos/seed/gallery-main/1920/1080",
+      "media_type": "photo_set",
+      "thumbnail_url": "https://picsum.photos/seed/photo-gallery/640/360",
+      "preview_image_urls": [
+        "https://picsum.photos/seed/gallery-1/1920/1080",
+        "https://picsum.photos/seed/gallery-2/1920/1080",
+        "https://picsum.photos/seed/gallery-3/1920/1080",
+        "https://picsum.photos/seed/gallery-4/1920/1080",
+        "https://picsum.photos/seed/gallery-5/1920/1080",
+        "https://picsum.photos/seed/gallery-6/1920/1080"
+      ],
+      "position": 16,
+      "product": {
+        "name": "Photo Set — Gallery",
+        "price_cents": 1,
+        "currency": "USD",
+        "access_duration_seconds": 604800
+      }
+    }
+  ]
+}

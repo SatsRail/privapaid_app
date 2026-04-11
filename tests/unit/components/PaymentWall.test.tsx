@@ -1,0 +1,932 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, act, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+// --- Mocks ---
+
+const mockSession = { data: null, status: "unauthenticated" as const };
+vi.mock("next-auth/react", () => ({
+  useSession: () => mockSession,
+}));
+
+const mockDecryptBlob = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]));
+const mockVerifyKeyFingerprint = vi.fn().mockResolvedValue(true);
+vi.mock("@/lib/client-crypto", () => ({
+  decryptBlob: (...args: unknown[]) => mockDecryptBlob(...args),
+  verifyKeyFingerprint: (...args: unknown[]) => mockVerifyKeyFingerprint(...args),
+}));
+
+const mockCaptureException = vi.fn();
+const mockCaptureMessage = vi.fn();
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => mockCaptureException(...args),
+  captureMessage: (...args: unknown[]) => mockCaptureMessage(...args),
+}));
+
+vi.mock("@/i18n/useLocale", async () => {
+  const { t: realT } = await import("@/i18n");
+  const boundT = (key: string, params?: Record<string, string | number>) => realT("en", key, params);
+  return { useLocale: () => ({ t: boundT, locale: "en" }) };
+});
+
+vi.mock("@/components/ui/Button", () => ({
+  default: ({ children, onClick, loading, className }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    loading?: boolean;
+    className?: string;
+  }) => (
+    <button onClick={onClick} disabled={loading} className={className} data-testid="unlock-btn">
+      {children}
+    </button>
+  ),
+}));
+
+vi.mock("@/components/CheckoutOverlay", () => ({
+  default: ({ checkoutToken, onComplete, onClose, merchantLogo, merchantName, priceCents, priceCurrency }: {
+    checkoutToken: string;
+    onComplete: (data: { key: string; macaroon: string }) => void;
+    onClose: () => void;
+    merchantLogo?: string;
+    merchantName?: string;
+    priceCents?: number;
+    priceCurrency?: string;
+  }) => (
+    <div data-testid="checkout-overlay">
+      <span data-testid="checkout-token">{checkoutToken}</span>
+      {merchantLogo && <span data-testid="merchant-logo">{merchantLogo}</span>}
+      {merchantName && <span data-testid="merchant-name">{merchantName}</span>}
+      {priceCents != null && <span data-testid="price-cents">{priceCents}</span>}
+      {priceCurrency && <span data-testid="price-currency">{priceCurrency}</span>}
+      <button data-testid="complete-btn" onClick={() => onComplete({ key: "test-key", macaroon: "test-macaroon" })}>Complete</button>
+      <button data-testid="complete-empty-btn" onClick={() => onComplete({ key: "", macaroon: "" })}>Complete Empty</button>
+      <button data-testid="complete-no-key-btn" onClick={() => onComplete({ key: "", macaroon: "test-macaroon" })}>Complete No Key</button>
+      <button data-testid="close-btn" onClick={onClose}>Close</button>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ContentRenderer", () => ({
+  default: ({ mediaType }: { decryptedBytes: Uint8Array; mediaType: string }) => (
+    <div data-testid="content-renderer">{mediaType}</div>
+  ),
+}));
+
+vi.mock("@/components/HeartbeatManager", () => ({
+  default: ({ productId, onExpired, onKeyRefreshed }: {
+    productId: string;
+    onExpired: () => void;
+    onKeyRefreshed: (key: string) => void;
+  }) => (
+    <div data-testid="heartbeat-manager" data-product-id={productId}>
+      <button data-testid="expire-btn" onClick={onExpired}>Expire</button>
+      <button data-testid="refresh-key-btn" onClick={() => onKeyRefreshed("refreshed-key")}>Refresh</button>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/ExchangeModal", () => ({
+  default: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? (
+      <div data-testid="exchange-modal">
+        <button data-testid="close-exchange" onClick={onClose}>Close Exchange</button>
+      </div>
+    ) : null,
+}));
+
+import PaymentWall from "@/components/PaymentWall";
+
+const defaultProducts = [
+  {
+    productId: "prod-1",
+    encryptedBlob: "encrypted-blob-1",
+    keyFingerprint: "fp-1",
+    name: "HD Video",
+    priceCents: 500,
+    currency: "USD",
+    accessDurationSeconds: 3600,
+    status: "active",
+  },
+];
+
+const defaultProps = {
+  mediaId: "media-123",
+  products: defaultProducts,
+  storedProductIds: ["prod-1"],
+  thumbnailUrl: "https://example.com/thumb.jpg",
+  mediaType: "video",
+};
+
+describe("PaymentWall", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSession.data = null;
+    mockSession.status = "unauthenticated" as const;
+    mockDecryptBlob.mockResolvedValue(new Uint8Array([1, 2, 3]));
+    mockVerifyKeyFingerprint.mockResolvedValue(true);
+
+    // Default: all fetches fail so we see the payment wall
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) });
+  });
+
+  // -------------------------------------------------------
+  // Initial render — payment wall (locked state)
+  // -------------------------------------------------------
+  describe("locked state (payment wall)", () => {
+    it("renders payment wall with thumbnail", async () => {
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+      const img = screen.getByAltText("Preview");
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute("src", "https://example.com/thumb.jpg");
+    });
+
+    it("renders payment wall without thumbnail", async () => {
+      render(<PaymentWall {...defaultProps} thumbnailUrl="" />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+      expect(screen.queryByAltText("Preview")).not.toBeInTheDocument();
+    });
+
+    it("shows product button with name and price", async () => {
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+        expect(screen.getAllByText(/\$5/)[0]).toBeInTheDocument();
+      });
+    });
+
+    it("shows 'Unlock with Lightning' when no name/price", async () => {
+      const products = [{ productId: "prod-1", encryptedBlob: "blob" }];
+      render(<PaymentWall {...defaultProps} products={products} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock content")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("shows access duration for timed products", async () => {
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("1 hr access")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("formats duration as minutes", async () => {
+      const products = [{ ...defaultProducts[0], accessDurationSeconds: 300 }];
+      render(<PaymentWall {...defaultProps} products={products} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("5 min access")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("formats duration as days", async () => {
+      const products = [{ ...defaultProducts[0], accessDurationSeconds: 172800 }];
+      render(<PaymentWall {...defaultProps} products={products} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("2 days access")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("formats duration as singular day", async () => {
+      const products = [{ ...defaultProducts[0], accessDurationSeconds: 86400 }];
+      render(<PaymentWall {...defaultProps} products={products} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("1 day access")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("shows Lifetime access for 0 seconds duration", async () => {
+      const products = [{ ...defaultProducts[0], accessDurationSeconds: 0 }];
+      render(<PaymentWall {...defaultProps} products={products} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Lifetime access")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("shows Need Bitcoin? button", async () => {
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Need Bitcoin?")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("opens exchange modal when Need Bitcoin? is clicked", async () => {
+      const user = userEvent.setup();
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Need Bitcoin?")[0]).toBeInTheDocument();
+      });
+      await user.click(screen.getAllByText("Need Bitcoin?")[0]);
+      expect(screen.getByTestId("exchange-modal")).toBeInTheDocument();
+    });
+
+    it("closes exchange modal", async () => {
+      const user = userEvent.setup();
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Need Bitcoin?")[0]).toBeInTheDocument();
+      });
+      await user.click(screen.getAllByText("Need Bitcoin?")[0]);
+      await user.click(screen.getByTestId("close-exchange"));
+      expect(screen.queryByTestId("exchange-modal")).not.toBeInTheDocument();
+    });
+
+    it("renders multiple products", async () => {
+      const products = [
+        defaultProducts[0],
+        { ...defaultProducts[0], productId: "prod-2", name: "4K Video", priceCents: 1000 },
+      ];
+      render(<PaymentWall {...defaultProps} products={products} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+        expect(screen.getAllByText(/4K Video/)[0]).toBeInTheDocument();
+      });
+    });
+
+    it("formats price with cents when not even dollar", async () => {
+      const products = [{ ...defaultProducts[0], priceCents: 550 }];
+      render(<PaymentWall {...defaultProps} products={products} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/\$5\.50/)[0]).toBeInTheDocument();
+      });
+    });
+  });
+
+  // -------------------------------------------------------
+  // Unlock via macaroons on mount
+  // -------------------------------------------------------
+  describe("macaroon-based unlock", () => {
+    it("unlocks content when macaroon is valid", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: true, json: async () => ({ key: "aes-key", key_fingerprint: "fp-1" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+    });
+
+    it("skips macaroon when key fingerprint verification fails", async () => {
+      mockVerifyKeyFingerprint.mockResolvedValue(false);
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: true, json: async () => ({ key: "aes-key", key_fingerprint: "fp-1" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("falls back to direct unlock when macaroons fail", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: false, json: async () => ({}) };
+        }
+        if (url === "/api/media/media-123/unlock") {
+          return {
+            ok: true,
+            json: async () => ({
+              key: "direct-key",
+              key_fingerprint: "fp-1",
+              encrypted_blob: "encrypted-blob-1",
+            }),
+          };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+    });
+
+    it("shows payment wall when direct unlock also fails", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("handles direct unlock throwing an exception", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: false, json: async () => ({}) };
+        }
+        if (url === "/api/media/media-123/unlock") {
+          throw new Error("Network error");
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("handles macaroon fetch throwing an exception", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          throw new Error("Network error");
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+    });
+  });
+
+  // -------------------------------------------------------
+  // Checkout flow
+  // -------------------------------------------------------
+  describe("checkout flow", () => {
+    it("creates checkout session and shows overlay", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "checkout-token-123" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+        expect(screen.getByTestId("checkout-token")).toHaveTextContent("checkout-token-123");
+      });
+    });
+
+    it("shows error when checkout fails", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: false, json: async () => ({ error: "Checkout failed" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Checkout failed")).toBeInTheDocument();
+      });
+    });
+
+    it("shows generic error when checkout throws", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          throw new Error("Network error");
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+      });
+    });
+
+    it("shows default error message when server returns no error field", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: false, json: async () => ({}) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Failed to create checkout session")).toBeInTheDocument();
+      });
+    });
+
+    it("closes checkout overlay", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("close-btn"));
+      expect(screen.queryByTestId("checkout-overlay")).not.toBeInTheDocument();
+    });
+
+    it("passes merchant info to checkout overlay", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(
+        <PaymentWall
+          {...defaultProps}
+          merchantLogo="https://example.com/logo.png"
+          merchantName="Test Merchant"
+        />
+      );
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("merchant-logo")).toHaveTextContent("https://example.com/logo.png");
+        expect(screen.getByTestId("merchant-name")).toHaveTextContent("Test Merchant");
+        expect(screen.getByTestId("price-cents")).toHaveTextContent("500");
+        expect(screen.getByTestId("price-currency")).toHaveTextContent("USD");
+      });
+    });
+  });
+
+  // -------------------------------------------------------
+  // Checkout completion
+  // -------------------------------------------------------
+  describe("checkout completion", () => {
+    it("decrypts content after successful checkout", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        if (url === "/api/macaroons" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({}) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-btn"));
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+    });
+
+    it("stores macaroon after checkout completion", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        if (url === "/api/macaroons" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({}) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-btn"));
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith("/api/macaroons", expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining("test-macaroon"),
+        }));
+      });
+    });
+
+    it("records purchase when user is a customer", async () => {
+      const user = userEvent.setup();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockSession as any).data = { user: { role: "customer" } };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockSession as any).status = "authenticated";
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: false, json: async () => ({}) };
+        }
+        if (url === "/api/media/media-123/unlock") {
+          return { ok: false, json: async () => ({}) };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-btn"));
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith("/api/customer/purchases", expect.objectContaining({
+          method: "POST",
+        }));
+      });
+    });
+
+    it("shows error when key fingerprint verification fails during checkout", async () => {
+      const user = userEvent.setup();
+      mockVerifyKeyFingerprint.mockResolvedValue(false);
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-btn"));
+      await waitFor(() => {
+        expect(screen.getByText("Key authenticity verification failed")).toBeInTheDocument();
+      });
+    });
+
+    it("does not store empty macaroon and logs to Sentry", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-empty-btn"));
+      await waitFor(() => {
+        // Should NOT have called POST /api/macaroons with empty value
+        const macaroonPosts = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+          (c: unknown[]) => c[0] === "/api/macaroons" && (c[1] as RequestInit | undefined)?.method === "POST"
+        );
+        expect(macaroonPosts).toHaveLength(0);
+        // Should have logged to Sentry
+        expect(mockCaptureMessage).toHaveBeenCalledWith(
+          "Checkout completed with empty macaroon",
+          expect.objectContaining({ level: "warning" })
+        );
+      });
+    });
+
+    it("falls back to unlock endpoint when key is empty after checkout", async () => {
+      const user = userEvent.setup();
+      let checkoutCreated = false;
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          checkoutCreated = true;
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        if (url === "/api/macaroons" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({}) };
+        }
+        if (url === "/api/media/media-123/unlock") {
+          // Fail on initial mount, succeed after checkout
+          if (!checkoutCreated) return { ok: false, json: async () => ({}) };
+          return {
+            ok: true,
+            json: async () => ({
+              key: "fallback-key",
+              key_fingerprint: "fp-1",
+              encrypted_blob: "encrypted-blob-1",
+              product_id: "prod-1",
+            }),
+          };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-no-key-btn"));
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+    });
+
+    it("shows error when both direct key and unlock fallback fail", async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        if (url === "/api/macaroons" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({}) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-no-key-btn"));
+      await waitFor(() => {
+        expect(screen.getByText("Payment received but content unlock failed. Please refresh the page to try again.")).toBeInTheDocument();
+      });
+    });
+
+    it("shows error when decryption fails after checkout", async () => {
+      const user = userEvent.setup();
+      mockDecryptBlob.mockRejectedValue(new Error("Decryption error"));
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/checkout" && opts?.method === "POST") {
+          return { ok: true, json: async () => ({ token: "tok" }) };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
+      });
+
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("complete-btn"));
+      await waitFor(() => {
+        expect(screen.getByText("Payment received but content unlock failed. Please refresh the page to try again.")).toBeInTheDocument();
+      });
+    });
+  });
+
+  // -------------------------------------------------------
+  // Unlocked state
+  // -------------------------------------------------------
+  describe("unlocked state", () => {
+    beforeEach(() => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: true, json: async () => ({ key: "aes-key", key_fingerprint: "fp-1" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+    });
+
+    it("renders ContentRenderer when unlocked", async () => {
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+    });
+
+    it("renders HeartbeatManager when unlocked", async () => {
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("heartbeat-manager")).toBeInTheDocument();
+      });
+    });
+
+    it("shows artwork for audio mediaType", async () => {
+      render(<PaymentWall {...defaultProps} mediaType="audio" />);
+      await waitFor(() => {
+        expect(screen.getByAltText("Artwork")).toBeInTheDocument();
+      });
+    });
+
+    it("shows artwork for podcast mediaType", async () => {
+      render(<PaymentWall {...defaultProps} mediaType="podcast" />);
+      await waitFor(() => {
+        expect(screen.getByAltText("Artwork")).toBeInTheDocument();
+      });
+    });
+
+    it("does not show artwork for video mediaType", async () => {
+      render(<PaymentWall {...defaultProps} mediaType="video" />);
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+      expect(screen.queryByAltText("Artwork")).not.toBeInTheDocument();
+    });
+
+    it("handles handleExpired callback by re-locking content", async () => {
+      const user = userEvent.setup();
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("heartbeat-manager")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByTestId("expire-btn"));
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+    });
+
+    it("handles handleKeyRefreshed callback by re-decrypting", async () => {
+      const user = userEvent.setup();
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("heartbeat-manager")).toBeInTheDocument();
+      });
+
+      mockDecryptBlob.mockResolvedValue(new Uint8Array([4, 5, 6]));
+      await user.click(screen.getByTestId("refresh-key-btn"));
+      // Content renderer should still be there
+      expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+    });
+
+    it("handles key refresh when fingerprint verification fails silently", async () => {
+      const user = userEvent.setup();
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("heartbeat-manager")).toBeInTheDocument();
+      });
+
+      mockVerifyKeyFingerprint.mockResolvedValue(false);
+      await user.click(screen.getByTestId("refresh-key-btn"));
+      // Still shows content (doesn't break)
+      expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+    });
+
+    it("handles key refresh when decryption throws silently", async () => {
+      const user = userEvent.setup();
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("heartbeat-manager")).toBeInTheDocument();
+      });
+
+      mockDecryptBlob.mockRejectedValue(new Error("decrypt error"));
+      await user.click(screen.getByTestId("refresh-key-btn"));
+      // Still shows content (doesn't break)
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+    });
+  });
+
+  // -------------------------------------------------------
+  // Direct unlock with fallback to first product
+  // -------------------------------------------------------
+  describe("direct unlock edge cases", () => {
+    it("falls back to first product when encrypted_blob does not match", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: false, json: async () => ({}) };
+        }
+        if (url === "/api/media/media-123/unlock") {
+          return {
+            ok: true,
+            json: async () => ({
+              key: "direct-key",
+              key_fingerprint: "fp-1",
+              encrypted_blob: "different-blob",
+            }),
+          };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+    });
+
+    it("skips direct unlock when fingerprint verification fails", async () => {
+      mockVerifyKeyFingerprint.mockResolvedValue(false);
+
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: false, json: async () => ({}) };
+        }
+        if (url === "/api/media/media-123/unlock") {
+          return {
+            ok: true,
+            json: async () => ({
+              key: "direct-key",
+              key_fingerprint: "fp-1",
+              encrypted_blob: "encrypted-blob-1",
+            }),
+          };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+    });
+  });
+});

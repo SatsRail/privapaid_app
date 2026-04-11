@@ -1,0 +1,345 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// --- Hoisted mocks (must come before all imports) ---
+
+const mockConnectDB = vi.hoisted(() => vi.fn());
+const mockSettingsFindOne = vi.hoisted(() => vi.fn());
+const mockCustomerFindOne = vi.hoisted(() => vi.fn());
+const mockCreateSession = vi.hoisted(() => vi.fn());
+const mockBcryptCompare = vi.hoisted(() => vi.fn());
+
+// Capture the NextAuth config so we can test callbacks and authorize fns
+const capturedConfig = vi.hoisted(() => ({ value: null as any }));
+
+vi.mock("next-auth", () => ({
+  default: (config: any) => {
+    capturedConfig.value = config;
+    return {
+      handlers: {},
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      auth: vi.fn(),
+    };
+  },
+}));
+
+vi.mock("next-auth/providers/credentials", () => ({
+  default: (opts: any) => opts,
+}));
+
+vi.mock("@/lib/mongodb", () => ({
+  connectDB: mockConnectDB,
+}));
+
+vi.mock("@/lib/satsrail", () => ({
+  satsrail: {
+    createSession: mockCreateSession,
+  },
+}));
+
+vi.mock("@/models/Settings", () => ({
+  default: {
+    findOne: mockSettingsFindOne,
+  },
+}));
+
+vi.mock("@/models/Customer", () => ({
+  default: {
+    findOne: mockCustomerFindOne,
+  },
+}));
+
+vi.mock("bcryptjs", () => ({
+  default: {
+    compare: mockBcryptCompare,
+  },
+}));
+
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Force the module to load, which triggers NextAuth(...) and captures config
+await import("@/lib/auth");
+
+// Extract provider authorize functions and callbacks
+const adminProvider = capturedConfig.value.providers[0];
+const customerProvider = capturedConfig.value.providers[1];
+const { jwt: jwtCallback, session: sessionCallback } =
+  capturedConfig.value.callbacks;
+
+describe("auth", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockConnectDB.mockResolvedValue(undefined);
+  });
+
+  // --- NextAuth configuration ---
+
+  describe("NextAuth configuration", () => {
+    it("has two credential providers", () => {
+      expect(capturedConfig.value.providers).toHaveLength(2);
+      expect(adminProvider.id).toBe("admin");
+      expect(customerProvider.id).toBe("customer");
+    });
+
+    it("uses jwt strategy", () => {
+      expect(capturedConfig.value.session.strategy).toBe("jwt");
+    });
+
+    it("has custom sign-in page", () => {
+      expect(capturedConfig.value.pages.signIn).toBe("/login");
+    });
+  });
+
+  // --- Admin authorize ---
+
+  describe("admin authorize", () => {
+    it("returns null when email is missing", async () => {
+      const result = await adminProvider.authorize({ password: "pass" });
+      expect(result).toBeNull();
+    });
+
+    it("returns null when password is missing", async () => {
+      const result = await adminProvider.authorize({ email: "a@b.com" });
+      expect(result).toBeNull();
+    });
+
+    it("returns null when credentials are empty", async () => {
+      const result = await adminProvider.authorize({});
+      expect(result).toBeNull();
+    });
+
+    it("returns null when credentials are null", async () => {
+      const result = await adminProvider.authorize(null);
+      expect(result).toBeNull();
+    });
+
+    it("returns null when settings not found", async () => {
+      mockSettingsFindOne.mockReturnValue({ lean: () => Promise.resolve(null) });
+
+      const result = await adminProvider.authorize({
+        email: "user@test.com",
+        password: "pass123",
+      });
+      expect(result).toBeNull();
+      expect(mockConnectDB).toHaveBeenCalled();
+    });
+
+    it("returns null when settings has no merchant_id", async () => {
+      mockSettingsFindOne.mockReturnValue({
+        lean: () =>
+          Promise.resolve({
+            merchant_id: null,
+            satsrail_api_url: "https://api.test.com",
+          }),
+      });
+
+      const result = await adminProvider.authorize({
+        email: "user@test.com",
+        password: "pass123",
+      });
+      expect(result).toBeNull();
+    });
+
+    it("returns null when settings has no satsrail_api_url", async () => {
+      mockSettingsFindOne.mockReturnValue({
+        lean: () =>
+          Promise.resolve({
+            merchant_id: "m_1",
+            satsrail_api_url: null,
+          }),
+      });
+
+      const result = await adminProvider.authorize({
+        email: "user@test.com",
+        password: "pass123",
+      });
+      expect(result).toBeNull();
+    });
+
+    it("returns null when merchant not found in session merchants", async () => {
+      mockSettingsFindOne.mockReturnValue({
+        lean: () =>
+          Promise.resolve({
+            merchant_id: "m_1",
+            satsrail_api_url: "https://api.test.com",
+          }),
+      });
+      mockCreateSession.mockResolvedValue({
+        merchants: [{ id: "m_other", name: "Other", role: "owner" }],
+      });
+
+      const result = await adminProvider.authorize({
+        email: "user@test.com",
+        password: "pass123",
+      });
+      expect(result).toBeNull();
+    });
+
+    it("returns user when merchant matches", async () => {
+      mockSettingsFindOne.mockReturnValue({
+        lean: () =>
+          Promise.resolve({
+            merchant_id: "m_1",
+            satsrail_api_url: "https://api.test.com",
+          }),
+      });
+      mockCreateSession.mockResolvedValue({
+        merchants: [
+          { id: "m_1", name: "My Shop", role: "owner" },
+          { id: "m_2", name: "Other", role: "manager" },
+        ],
+      });
+
+      const result = await adminProvider.authorize({
+        email: "user@test.com",
+        password: "pass123",
+      });
+
+      expect(result).toEqual({
+        id: "m_1",
+        email: "user@test.com",
+        name: "My Shop",
+        role: "owner",
+        type: "admin",
+      });
+      expect(mockCreateSession).toHaveBeenCalledWith(
+        "user@test.com",
+        "pass123",
+        "https://api.test.com"
+      );
+    });
+
+    it("returns null when createSession throws", async () => {
+      mockSettingsFindOne.mockReturnValue({
+        lean: () =>
+          Promise.resolve({
+            merchant_id: "m_1",
+            satsrail_api_url: "https://api.test.com",
+          }),
+      });
+      mockCreateSession.mockRejectedValue(new Error("API error"));
+
+      const result = await adminProvider.authorize({
+        email: "user@test.com",
+        password: "wrong",
+      });
+      expect(result).toBeNull();
+    });
+  });
+
+  // --- Customer authorize ---
+
+  describe("customer authorize", () => {
+    it("returns null when nickname is missing", async () => {
+      const result = await customerProvider.authorize({ password: "pass" });
+      expect(result).toBeNull();
+    });
+
+    it("returns null when password is missing", async () => {
+      const result = await customerProvider.authorize({ nickname: "nick" });
+      expect(result).toBeNull();
+    });
+
+    it("returns null when credentials are empty", async () => {
+      const result = await customerProvider.authorize({});
+      expect(result).toBeNull();
+    });
+
+    it("returns null when credentials are null", async () => {
+      const result = await customerProvider.authorize(null);
+      expect(result).toBeNull();
+    });
+
+    it("returns null when customer not found", async () => {
+      mockCustomerFindOne.mockResolvedValue(null);
+
+      const result = await customerProvider.authorize({
+        nickname: "unknown",
+        password: "pass",
+      });
+      expect(result).toBeNull();
+    });
+
+    it("returns null when password does not match", async () => {
+      mockCustomerFindOne.mockResolvedValue({
+        _id: { toString: () => "cust_1" },
+        nickname: "nick",
+        password_hash: "$2a$hash",
+      });
+      mockBcryptCompare.mockResolvedValue(false);
+
+      const result = await customerProvider.authorize({
+        nickname: "nick",
+        password: "wrong",
+      });
+      expect(result).toBeNull();
+      expect(mockBcryptCompare).toHaveBeenCalledWith("wrong", "$2a$hash");
+    });
+
+    it("returns user when credentials are valid", async () => {
+      mockCustomerFindOne.mockResolvedValue({
+        _id: { toString: () => "cust_1" },
+        nickname: "nick",
+        password_hash: "$2a$hash",
+      });
+      mockBcryptCompare.mockResolvedValue(true);
+
+      const result = await customerProvider.authorize({
+        nickname: "nick",
+        password: "correct",
+      });
+
+      expect(result).toEqual({
+        id: "cust_1",
+        name: "nick",
+        type: "customer",
+        role: "customer",
+      });
+    });
+  });
+
+  // --- JWT callback ---
+
+  describe("jwt callback", () => {
+    it("sets token fields when user is present", async () => {
+      const token = {};
+      const user = { id: "u_1", type: "admin" as const, role: "owner" };
+
+      const result = await jwtCallback({ token, user });
+      expect(result).toEqual({
+        userId: "u_1",
+        type: "admin",
+        role: "owner",
+      });
+    });
+
+    it("returns token unchanged when user is not present", async () => {
+      const token = { userId: "u_1", type: "admin" as const, role: "owner" };
+
+      const result = await jwtCallback({ token, user: undefined });
+      expect(result).toEqual(token);
+    });
+  });
+
+  // --- Session callback ---
+
+  describe("session callback", () => {
+    it("sets session.user fields from token", async () => {
+      const session = { user: { id: "", email: "a@b.com" } };
+      const token = { userId: "u_1", type: "admin" as const, role: "owner" };
+
+      const result = await sessionCallback({ session, token });
+      expect(result.user.id).toBe("u_1");
+      expect(result.user.type).toBe("admin");
+      expect(result.user.role).toBe("owner");
+    });
+
+    it("handles session without user gracefully", async () => {
+      const session = { user: null };
+      const token = { userId: "u_1", type: "admin" as const, role: "owner" };
+
+      const result = await sessionCallback({ session, token });
+      expect(result).toEqual({ user: null });
+    });
+  });
+});

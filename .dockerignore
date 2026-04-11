@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+.claude
+scripts
+docs
+*.md
+!README.md
