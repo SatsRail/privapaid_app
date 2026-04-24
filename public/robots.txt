@@ -1,0 +1,13 @@
+User-agent: *
+
+# Block individual content item pages (MongoDB-style IDs) — thin demo content
+# that wastes crawl budget and generates low-quality signals
+Disallow: /c/*/*
+
+# Block internal API routes
+Disallow: /api/
+
+# Allow everything else (channel pages, homepage, etc.)
+Allow: /
+
+Sitemap: https://app.privapaid.com/sitemap.xml
