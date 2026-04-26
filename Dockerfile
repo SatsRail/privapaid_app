@@ -2,7 +2,7 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,id=npm,target=/root/.npm npm ci
+RUN npm ci
 
 # --- Stage 2: Build the application ---
 FROM node:22-alpine AS build

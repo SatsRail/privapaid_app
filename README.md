@@ -32,15 +32,7 @@ Encryption keys and auth secrets are generated automatically on first run.
 
 ## Deploy to the Cloud
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/CeRlp_?referralCode=6xvEI7&utm_medium=integration&utm_source=template&utm_campaign=generic)
-
-Railway includes MongoDB — no external database needed. After deploy:
-
-1. Open your app URL and complete the setup wizard
-2. Paste your SatsRail API key (from [satsrail.com](https://satsrail.com))
-3. Log in with your admin credentials
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for Railway details, EC2, and other options.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for EC2, Docker, and other deployment options.
 
 ## What You Get
 
