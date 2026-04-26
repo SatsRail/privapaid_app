@@ -32,6 +32,27 @@ Encryption keys and auth secrets are generated automatically on first run.
 
 ## Deploy to the Cloud
 
+### Railway
+
+1. **Create the project:** in [Railway](https://railway.com/), click **New Project** → **Deploy from GitHub repo** → pick your fork of `privapaid_app`. Railway will detect the `Dockerfile` and start a build.
+2. **Add MongoDB:** on the project canvas, click **+ Create** → **Database** → **Add MongoDB**.
+3. **Generate secrets locally:**
+   ```bash
+   echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)"
+   echo "SK_ENCRYPTION_KEY=$(openssl rand -hex 32)"
+   ```
+4. **Set variables** on the `privapaid_app` service → **Variables** tab:
+   ```
+   MONGODB_URI=${{MongoDB.MONGO_URL}}
+   NEXTAUTH_SECRET=<paste from step 3>
+   SK_ENCRYPTION_KEY=<paste from step 3>
+   SATSRAIL_API_URL=https://satsrail.com
+   ```
+   `${{MongoDB.MONGO_URL}}` is Railway's reference syntax — it auto-resolves to the connection string of the MongoDB service.
+5. **Deploy:** Railway redeploys automatically when variables change. Once the healthcheck on `/api/health` passes, open the public URL and complete the setup wizard.
+
+> **Important:** always set `NEXTAUTH_SECRET` and `SK_ENCRYPTION_KEY` explicitly. Railway containers have ephemeral filesystems, so the entrypoint's auto-generated secrets would rotate on every restart — invalidating sessions and breaking decryption of existing content.
+
 See [DEPLOYMENT.md](DEPLOYMENT.md) for EC2, Docker, and other deployment options.
 
 ## What You Get
