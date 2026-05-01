@@ -8,6 +8,7 @@ import { getInstanceConfig } from "@/config/instance";
 import { getMerchantKey } from "@/lib/merchant-key";
 import { satsrail } from "@/lib/satsrail";
 import MediaForm from "../../MediaForm";
+import DeleteMediaButton from "./DeleteMediaButton";
 
 export const dynamic = "force-dynamic";
 
@@ -186,6 +187,11 @@ export default async function EditMediaPage({
             md_{media.ref}
           </span>
         )}
+        <DeleteMediaButton
+          mediaId={String(media._id)}
+          channelId={channelId}
+          name={media.name}
+        />
       </div>
       <MediaForm
         channelId={channelId}

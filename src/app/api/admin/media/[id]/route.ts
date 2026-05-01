@@ -127,6 +127,43 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Archive corresponding SatsRail products for individual MediaProducts.
+  // ChannelProducts are NOT archived — they cover the whole channel; we only
+  // pull this media's entry from their encrypted_media array (below).
+  const mediaProducts = await MediaProduct.find({ media_id: media._id })
+    .select("satsrail_product_id")
+    .lean();
+  const archivedProductIds: string[] = [];
+  const archiveErrors: { productId: string; error: string }[] = [];
+
+  if (mediaProducts.length > 0) {
+    const sk = await getMerchantKey();
+    if (!sk) {
+      console.warn(
+        "media.delete: no merchant key — skipping SatsRail archive for products:",
+        mediaProducts.map((mp) => mp.satsrail_product_id)
+      );
+    } else {
+      for (const mp of mediaProducts) {
+        try {
+          await satsrail.deleteProduct(sk, mp.satsrail_product_id);
+          archivedProductIds.push(mp.satsrail_product_id);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Unknown error";
+          console.error(
+            `media.delete: failed to archive SatsRail product ${mp.satsrail_product_id}:`,
+            message
+          );
+          archiveErrors.push({ productId: mp.satsrail_product_id, error: message });
+        }
+      }
+    }
+
+    // Remove local MediaProduct records — they reference the deleted media
+    // and the corresponding encrypted blobs are no longer needed.
+    await MediaProduct.deleteMany({ media_id: media._id });
+  }
+
   audit({
     actorId: auth.id,
     actorEmail: auth.email,
@@ -134,7 +171,12 @@ export async function DELETE(
     action: "media.delete",
     targetType: "media",
     targetId: id,
-    details: { name: media.name, channel_id: String(media.channel_id) },
+    details: {
+      name: media.name,
+      channel_id: String(media.channel_id),
+      archived_product_ids: archivedProductIds,
+      archive_errors: archiveErrors.length > 0 ? archiveErrors : undefined,
+    },
   });
 
   // Decrement channel media count

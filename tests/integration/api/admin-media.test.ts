@@ -23,8 +23,10 @@ vi.mock("@/lib/content-encryption", () => ({
 
 import { GET as listMedia, POST as createMedia } from "@/app/api/admin/media/route";
 import { GET as getMedia, PATCH as updateMedia, DELETE as deleteMedia } from "@/app/api/admin/media/[id]/route";
+import { getMerchantKey } from "@/lib/merchant-key";
 import Channel from "@/models/Channel";
 import Media from "@/models/Media";
+import MediaProduct from "@/models/MediaProduct";
 
 function jsonRequest(url: string, method: string, body?: Record<string, unknown>): NextRequest {
   const init: { method: string; headers: Record<string, string>; body?: string } = { method, headers: { "Content-Type": "application/json" } };
@@ -43,6 +45,9 @@ describe("Admin Media API", () => {
 
   afterEach(async () => {
     await clearCollections();
+    vi.clearAllMocks();
+    vi.mocked(getMerchantKey).mockResolvedValue("sk_test_key");
+    mockSatsrailClient.deleteProduct.mockReset();
   });
 
   async function seedChannel(): Promise<string> {
@@ -240,6 +245,154 @@ describe("Admin Media API", () => {
 
       expect(res.status).toBe(404);
       expect(body.error).toBe("Not found");
+    });
+
+    it("removes media from channel product encrypted_media", async () => {
+      const { default: ChannelProduct } = await import("@/models/ChannelProduct");
+      const chId = await seedChannel();
+      const mediaId = await seedMedia(chId);
+
+      const cp = await ChannelProduct.create({
+        channel_id: chId,
+        satsrail_product_id: "prod_abc",
+        encrypted_media: [{ media_id: new mongoose.Types.ObjectId(mediaId), encrypted_source_url: "blob" }],
+      });
+
+      await Channel.findByIdAndUpdate(chId, { media_count: 1 });
+
+      const req = jsonRequest(`http://localhost:3000/api/admin/media/${mediaId}`, "DELETE");
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: mediaId }) });
+      expect(res.status).toBe(200);
+
+      const updated = await ChannelProduct.findById(cp._id);
+      expect(updated!.encrypted_media).toHaveLength(0);
+    });
+
+    it("archives associated MediaProduct on SatsRail and removes the local record", async () => {
+      const chId = await seedChannel();
+      const mediaId = await seedMedia(chId);
+
+      await MediaProduct.create({
+        media_id: mediaId,
+        satsrail_product_id: "prod_individual_1",
+        encrypted_source_url: "blob",
+      });
+
+      mockSatsrailClient.deleteProduct.mockResolvedValue(undefined);
+
+      const req = jsonRequest(`http://localhost:3000/api/admin/media/${mediaId}`, "DELETE");
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: mediaId }) });
+      expect(res.status).toBe(200);
+
+      expect(mockSatsrailClient.deleteProduct).toHaveBeenCalledTimes(1);
+      expect(mockSatsrailClient.deleteProduct).toHaveBeenCalledWith("sk_test_key", "prod_individual_1");
+
+      const remaining = await MediaProduct.find({ media_id: mediaId });
+      expect(remaining).toHaveLength(0);
+    });
+
+    it("archives every MediaProduct when multiple products are tied to media", async () => {
+      const chId = await seedChannel();
+      const mediaIdA = await seedMedia(chId, { ref: 100 });
+
+      // Two MediaProducts on the same media — schema allows the array to grow
+      // even if media_id is unique-indexed only one row is permitted, so use a
+      // different media row and verify the loop iterates.
+      const mediaIdB = await seedMedia(chId, { ref: 101, position: 2 });
+
+      await MediaProduct.create({
+        media_id: mediaIdA,
+        satsrail_product_id: "prod_A",
+        encrypted_source_url: "blobA",
+      });
+      await MediaProduct.create({
+        media_id: mediaIdB,
+        satsrail_product_id: "prod_B",
+        encrypted_source_url: "blobB",
+      });
+
+      mockSatsrailClient.deleteProduct.mockResolvedValue(undefined);
+
+      // Delete first media — only prod_A should be archived
+      const reqA = jsonRequest(`http://localhost:3000/api/admin/media/${mediaIdA}`, "DELETE");
+      const resA = await deleteMedia(reqA, { params: Promise.resolve({ id: mediaIdA }) });
+      expect(resA.status).toBe(200);
+
+      expect(mockSatsrailClient.deleteProduct).toHaveBeenCalledTimes(1);
+      expect(mockSatsrailClient.deleteProduct).toHaveBeenCalledWith("sk_test_key", "prod_A");
+
+      // prod_B should still exist
+      const remaining = await MediaProduct.findOne({ satsrail_product_id: "prod_B" });
+      expect(remaining).not.toBeNull();
+    });
+
+    it("still soft-deletes media when SatsRail archive fails", async () => {
+      const chId = await seedChannel();
+      const mediaId = await seedMedia(chId);
+
+      await MediaProduct.create({
+        media_id: mediaId,
+        satsrail_product_id: "prod_failing",
+        encrypted_source_url: "blob",
+      });
+
+      await Channel.findByIdAndUpdate(chId, { media_count: 1 });
+
+      mockSatsrailClient.deleteProduct.mockRejectedValue(new Error("SatsRail down"));
+
+      const req = jsonRequest(`http://localhost:3000/api/admin/media/${mediaId}`, "DELETE");
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: mediaId }) });
+      expect(res.status).toBe(200);
+
+      // Local soft-delete proceeded
+      const media = await Media.findById(mediaId);
+      expect(media!.deleted_at).toBeTruthy();
+
+      // MediaProduct still cleaned up locally even if SatsRail failed
+      const remaining = await MediaProduct.find({ media_id: mediaId });
+      expect(remaining).toHaveLength(0);
+
+      // Channel media_count still decremented
+      const channel = await Channel.findById(chId);
+      expect(channel!.media_count).toBe(0);
+    });
+
+    it("skips SatsRail call when merchant key is unavailable but still soft-deletes", async () => {
+      const chId = await seedChannel();
+      const mediaId = await seedMedia(chId);
+
+      await MediaProduct.create({
+        media_id: mediaId,
+        satsrail_product_id: "prod_no_key",
+        encrypted_source_url: "blob",
+      });
+
+      vi.mocked(getMerchantKey).mockResolvedValueOnce(null);
+
+      const req = jsonRequest(`http://localhost:3000/api/admin/media/${mediaId}`, "DELETE");
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: mediaId }) });
+      expect(res.status).toBe(200);
+
+      expect(mockSatsrailClient.deleteProduct).not.toHaveBeenCalled();
+
+      // Local soft-delete still proceeds
+      const media = await Media.findById(mediaId);
+      expect(media!.deleted_at).toBeTruthy();
+
+      // Local MediaProduct records still removed
+      const remaining = await MediaProduct.find({ media_id: mediaId });
+      expect(remaining).toHaveLength(0);
+    });
+
+    it("does not call SatsRail when media has no MediaProducts", async () => {
+      const chId = await seedChannel();
+      const mediaId = await seedMedia(chId);
+
+      const req = jsonRequest(`http://localhost:3000/api/admin/media/${mediaId}`, "DELETE");
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: mediaId }) });
+      expect(res.status).toBe(200);
+
+      expect(mockSatsrailClient.deleteProduct).not.toHaveBeenCalled();
     });
   });
 });

@@ -77,6 +77,8 @@
   "admin.channels.cancel": "Cancel",
   "admin.channels.earnings": "Earnings",
   "admin.channels.add_media": "Add Media",
+  "admin.media.delete_confirm": "Delete media \"{name}\"? This cannot be undone.",
+  "admin.media.delete_failed": "Failed to delete media",
   "admin.channels.type": "Type",
   "admin.channels.media_empty": "No media yet. Add your first item.",
 
