@@ -62,7 +62,7 @@ export default function PreviewGallery({ images, locked, compact }: PreviewGalle
     : images.length <= 2 ? "grid-cols-2" : "grid-cols-3";
 
   function handleTileClick(i: number) {
-    if (locked) return;
+    if (locked && !compact) return;
     if (compact) {
       setSelectedIndex((prev) => (prev === i ? null : i));
     } else {
