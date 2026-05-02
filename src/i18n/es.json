@@ -193,6 +193,7 @@
 
   "viewer.sidebar.channels": "Canales",
   "viewer.sidebar.home": "Inicio",
+  "viewer.sidebar.admin": "Admin",
   "viewer.sidebar.other": "Otros",
   "viewer.sidebar.empty": "No hay canales.",
   "viewer.sidebar.explore": "Explorar",

@@ -43,8 +43,10 @@ export default function Sidebar({
 
   const isActive = (slug: string) => pathname === `/c/${slug}` || pathname.startsWith(`/c/${slug}/`);
   const isHome = pathname === "/";
+  const isAdminPage = pathname.startsWith("/admin");
   const isLoggedIn = !!session?.user;
   const isCustomer = isLoggedIn && (session.user as { type?: string }).type === "customer";
+  const isAdmin = isLoggedIn && (session.user as { type?: string }).type === "admin";
 
   const languages: { code: Locale; labelKey: string }[] = [
     { code: "en", labelKey: "viewer.sidebar.lang_en" },
@@ -101,6 +103,23 @@ export default function Sidebar({
               )}
               {!collapsed && <span className={isHome ? "font-medium" : ""}>{t("viewer.sidebar.home")}</span>}
             </Link>
+
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={`flex items-center gap-5 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  isAdminPage ? "bg-[var(--theme-bg-secondary)]" : "hover:bg-[var(--theme-bg-secondary)]"
+                }`}
+                style={{ color: isAdminPage ? "var(--theme-heading)" : "var(--theme-text)" }}
+                title={collapsed ? t("viewer.sidebar.admin") : undefined}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="M9 12l2 2 4-4" />
+                </svg>
+                {!collapsed && <span className={isAdminPage ? "font-medium" : ""}>{t("viewer.sidebar.admin")}</span>}
+              </Link>
+            )}
           </div>
 
           <div
