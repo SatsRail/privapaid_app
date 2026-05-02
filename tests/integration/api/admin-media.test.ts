@@ -202,11 +202,10 @@ describe("Admin Media API", () => {
   });
 
   describe("DELETE /api/admin/media/[id]", () => {
-    it("soft-deletes media", async () => {
+    it("hard-deletes media from MongoDB and decrements channel media_count", async () => {
       const chId = await seedChannel();
       const mediaId = await seedMedia(chId);
 
-      // Set initial media_count so decrement works
       await Channel.findByIdAndUpdate(chId, { media_count: 1 });
 
       const req = jsonRequest(`http://localhost:3000/api/admin/media/${mediaId}`, "DELETE");
@@ -216,11 +215,10 @@ describe("Admin Media API", () => {
       expect(res.status).toBe(200);
       expect(body.success).toBe(true);
 
-      // Verify soft-delete
+      // Row is gone from Mongo
       const media = await Media.findById(mediaId);
-      expect(media!.deleted_at).toBeTruthy();
+      expect(media).toBeNull();
 
-      // Verify channel media_count decremented
       const channel = await Channel.findById(chId);
       expect(channel!.media_count).toBe(0);
     });
@@ -235,16 +233,41 @@ describe("Admin Media API", () => {
       expect(body.error).toBe("Not found");
     });
 
-    it("returns 404 for already-deleted media", async () => {
+    it("cleans up legacy soft-deleted media without double-decrementing channel count", async () => {
       const chId = await seedChannel();
       const mediaId = await seedMedia(chId, { deleted_at: new Date() });
+
+      // Channel count was already decremented when this was soft-deleted previously
+      await Channel.findByIdAndUpdate(chId, { media_count: 5 });
+
+      await MediaProduct.create({
+        media_id: mediaId,
+        satsrail_product_id: "prod_leftover",
+        encrypted_source_url: "blob",
+      });
+
+      mockSatsrailClient.deleteProduct.mockResolvedValue(undefined);
 
       const req = jsonRequest(`http://localhost:3000/api/admin/media/${mediaId}`, "DELETE");
       const res = await deleteMedia(req, { params: Promise.resolve({ id: mediaId }) });
       const body = await res.json();
 
-      expect(res.status).toBe(404);
-      expect(body.error).toBe("Not found");
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+
+      // Row hard-deleted
+      const media = await Media.findById(mediaId);
+      expect(media).toBeNull();
+
+      // SatsRail archive ran for the leftover product
+      expect(mockSatsrailClient.deleteProduct).toHaveBeenCalledWith("sk_test_key", "prod_leftover");
+
+      const remaining = await MediaProduct.find({ media_id: mediaId });
+      expect(remaining).toHaveLength(0);
+
+      // Channel count NOT decremented again (was already decremented at soft-delete time)
+      const channel = await Channel.findById(chId);
+      expect(channel!.media_count).toBe(5);
     });
 
     it("removes media from channel product encrypted_media", async () => {
@@ -326,7 +349,7 @@ describe("Admin Media API", () => {
       expect(remaining).not.toBeNull();
     });
 
-    it("still soft-deletes media when SatsRail archive fails", async () => {
+    it("still hard-deletes media when SatsRail archive fails", async () => {
       const chId = await seedChannel();
       const mediaId = await seedMedia(chId);
 
@@ -344,20 +367,18 @@ describe("Admin Media API", () => {
       const res = await deleteMedia(req, { params: Promise.resolve({ id: mediaId }) });
       expect(res.status).toBe(200);
 
-      // Local soft-delete proceeded
+      // Local hard-delete proceeded
       const media = await Media.findById(mediaId);
-      expect(media!.deleted_at).toBeTruthy();
+      expect(media).toBeNull();
 
-      // MediaProduct still cleaned up locally even if SatsRail failed
       const remaining = await MediaProduct.find({ media_id: mediaId });
       expect(remaining).toHaveLength(0);
 
-      // Channel media_count still decremented
       const channel = await Channel.findById(chId);
       expect(channel!.media_count).toBe(0);
     });
 
-    it("skips SatsRail call when merchant key is unavailable but still soft-deletes", async () => {
+    it("skips SatsRail call when merchant key is unavailable but still hard-deletes", async () => {
       const chId = await seedChannel();
       const mediaId = await seedMedia(chId);
 
@@ -375,11 +396,9 @@ describe("Admin Media API", () => {
 
       expect(mockSatsrailClient.deleteProduct).not.toHaveBeenCalled();
 
-      // Local soft-delete still proceeds
       const media = await Media.findById(mediaId);
-      expect(media!.deleted_at).toBeTruthy();
+      expect(media).toBeNull();
 
-      // Local MediaProduct records still removed
       const remaining = await MediaProduct.find({ media_id: mediaId });
       expect(remaining).toHaveLength(0);
     });

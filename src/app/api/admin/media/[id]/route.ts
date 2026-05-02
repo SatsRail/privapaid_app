@@ -118,14 +118,11 @@ export async function DELETE(
   await connectDB();
   const { id } = await params;
 
-  const media = await Media.findOneAndUpdate(
-    { _id: id, deleted_at: null },
-    { deleted_at: new Date() },
-    { returnDocument: "after" }
-  );
+  const media = await Media.findById(id);
   if (!media) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const wasAlreadySoftDeleted = media.deleted_at !== null;
 
   // Archive corresponding SatsRail products for individual MediaProducts.
   // ChannelProducts are NOT archived — they cover the whole channel; we only
@@ -159,10 +156,31 @@ export async function DELETE(
       }
     }
 
-    // Remove local MediaProduct records — they reference the deleted media
-    // and the corresponding encrypted blobs are no longer needed.
     await MediaProduct.deleteMany({ media_id: media._id });
   }
+
+  // Remove this media from channel product encrypted_media arrays.
+  try {
+    await ChannelProduct.updateMany(
+      { channel_id: media.channel_id },
+      { $pull: { encrypted_media: { media_id: media._id } } }
+    );
+  } catch (err) {
+    console.error("Failed to clean up channel product blobs:", err);
+  }
+
+  // Decrement channel media count — but only if it wasn't already soft-deleted
+  // (legacy state where decrement already happened).
+  if (!wasAlreadySoftDeleted) {
+    const { default: Channel } = await import("@/models/Channel");
+    await Channel.findByIdAndUpdate(media.channel_id, {
+      $inc: { media_count: -1 },
+    });
+  }
+
+  // Hard-delete the media row. SatsRail keeps the transaction history; the
+  // audit log below records the deletion event independently of the row.
+  await Media.deleteOne({ _id: media._id });
 
   audit({
     actorId: auth.id,
@@ -176,24 +194,12 @@ export async function DELETE(
       channel_id: String(media.channel_id),
       archived_product_ids: archivedProductIds,
       archive_errors: archiveErrors.length > 0 ? archiveErrors : undefined,
+      was_already_soft_deleted: wasAlreadySoftDeleted,
     },
   });
 
-  // Decrement channel media count
-  const { default: Channel } = await import("@/models/Channel");
-  await Channel.findByIdAndUpdate(media.channel_id, {
-    $inc: { media_count: -1 },
+  return NextResponse.json({
+    success: true,
+    archived_product_ids: archivedProductIds,
   });
-
-  // Remove this media from channel product encrypted_media arrays
-  try {
-    await ChannelProduct.updateMany(
-      { channel_id: media.channel_id },
-      { $pull: { encrypted_media: { media_id: media._id } } }
-    );
-  } catch (err) {
-    console.error("Failed to clean up channel product blobs:", err);
-  }
-
-  return NextResponse.json({ success: true });
 }
