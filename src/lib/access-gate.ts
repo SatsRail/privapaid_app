@@ -88,21 +88,42 @@ export async function getProductsForMedia(
 
 // ── SatsRail verify call ─────────────────────────────────────────────
 
-export interface VerifyResult {
-  ok: boolean;
-  key?: string;
-  keyFingerprint?: string;
-  remainingSeconds?: number;
-}
+/**
+ * Discriminated outcome of a SatsRail token verification.
+ *
+ * Important: only `"invalid"` indicates a definitively rejected macaroon
+ * (portal returned 402 Payment Required, the only status the verify
+ * endpoint uses to signal "this access token is dead"). Every other
+ * non-success — 401 (merchant auth), 5xx, network errors, parse errors —
+ * is reported as `"transient"` so callers do NOT delete the user's
+ * macaroon over a hiccup that has nothing to do with their payment.
+ */
+export type VerifyOutcome =
+  | {
+      status: "valid";
+      key?: string;
+      keyFingerprint?: string;
+      remainingSeconds: number;
+    }
+  | { status: "invalid"; reason: "rejected_by_portal" }
+  | { status: "transient"; reason: "non_2xx" | "network" | "bad_body"; httpStatus?: number };
 
 /**
  * Verify a single access token against SatsRail's merchant API.
- * Returns `{ ok: false }` on any failure (invalid, expired, network).
+ *
+ * The portal's `POST /api/v1/m/access/verify` returns:
+ *   - 200 with `{ valid: true, remaining_seconds, key?, key_fingerprint? }`
+ *     when the macaroon is signature-valid and not expired.
+ *   - 402 Payment Required when the macaroon is invalid OR expired.
+ *     This is the ONLY signal we treat as "definitively rejected".
+ *   - 401 if the MERCHANT key is bad (not the user's macaroon).
+ *   - 5xx / network errors on portal trouble.
+ *
  * Used by both verifyMacaroonAccess and the macaroons PUT proxy.
  */
 export async function verifySatsrailToken(
   accessToken: string
-): Promise<VerifyResult> {
+): Promise<VerifyOutcome> {
   const config = await getInstanceConfig();
   const satsrailApiUrl = config.satsrail.apiUrl;
   const merchantKey = await getMerchantKey();
@@ -110,17 +131,40 @@ export async function verifySatsrailToken(
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (merchantKey) headers["Authorization"] = `Bearer ${merchantKey}`;
 
-  const res = await fetch(`${satsrailApiUrl}/m/access/verify`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ access_token: accessToken }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${satsrailApiUrl}/m/access/verify`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+  } catch {
+    return { status: "transient", reason: "network" };
+  }
 
-  if (!res.ok) return { ok: false };
+  if (res.status === 402) {
+    return { status: "invalid", reason: "rejected_by_portal" };
+  }
 
-  const data = await res.json();
+  if (!res.ok) {
+    return { status: "transient", reason: "non_2xx", httpStatus: res.status };
+  }
+
+  let data: { valid?: boolean; remaining_seconds?: number; key?: string; key_fingerprint?: string };
+  try {
+    data = await res.json();
+  } catch {
+    return { status: "transient", reason: "bad_body", httpStatus: res.status };
+  }
+
+  if (data.valid !== true || typeof data.remaining_seconds !== "number" || data.remaining_seconds <= 0) {
+    // Unexpected — portal said 200 but body doesn't look right or is exhausted.
+    // Be conservative: treat as transient so we don't nuke a possibly-valid cookie.
+    return { status: "transient", reason: "bad_body", httpStatus: res.status };
+  }
+
   return {
-    ok: data.remaining_seconds > 0,
+    status: "valid",
     key: data.key,
     keyFingerprint: data.key_fingerprint,
     remainingSeconds: data.remaining_seconds,
@@ -148,20 +192,17 @@ export async function verifyMacaroonAccess(
     const macaroon = macaroons[pid];
     if (!macaroon) continue;
 
-    try {
-      const result = await verifySatsrailToken(macaroon);
-      if (result.ok) {
-        return {
-          granted: true,
-          productId: pid,
-          key: result.key,
-          keyFingerprint: result.keyFingerprint,
-          remainingSeconds: result.remainingSeconds,
-        };
-      }
-    } catch {
-      // Network error — try next product
+    const result = await verifySatsrailToken(macaroon);
+    if (result.status === "valid") {
+      return {
+        granted: true,
+        productId: pid,
+        key: result.key,
+        keyFingerprint: result.keyFingerprint,
+        remainingSeconds: result.remainingSeconds,
+      };
     }
+    // status: "invalid" or "transient" — try next product
   }
 
   return { granted: false };

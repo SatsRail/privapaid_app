@@ -290,7 +290,9 @@ describe("Media Unlock API — GET /api/media/[id]/unlock", () => {
     mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_unlock: "mac_valid" }));
     mockFetch.mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
+        valid: true,
         key: "decrypt_key_123",
         key_fingerprint: "fp_from_verify",
         remaining_seconds: 3600,
@@ -311,7 +313,9 @@ describe("Media Unlock API — GET /api/media/[id]/unlock", () => {
     mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_unlock: "mac_valid" }));
     mockFetch.mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
+        valid: true,
         key: "decrypt_key_456",
         remaining_seconds: 1800,
       }),
@@ -329,7 +333,9 @@ describe("Media Unlock API — GET /api/media/[id]/unlock", () => {
     mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_ch_unlock: "mac_ch" }));
     mockFetch.mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
+        valid: true,
         key: "ch_key",
         remaining_seconds: 7200,
       }),
@@ -426,7 +432,9 @@ describe("Media Unlock API — GET /api/media/[id]/unlock", () => {
     mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_channel_bundle: "mac_channel" }));
     mockFetch.mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
+        valid: true,
         key: "channel_key_abc",
         remaining_seconds: 86400,
       }),
@@ -450,7 +458,9 @@ describe("Media Unlock API — GET /api/media/[id]/unlock", () => {
     }));
     mockFetch.mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
+        valid: true,
         key: "media_key_xyz",
         remaining_seconds: 3600,
       }),
@@ -504,7 +514,9 @@ describe("Media Unlock API — GET /api/media/[id]/unlock", () => {
     mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_active_channel: "mac_active" }));
     mockFetch.mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
+        valid: true,
         key: "active_ch_key",
         remaining_seconds: 7200,
       }),
@@ -573,7 +585,9 @@ describe("Media Unlock API — GET /api/media/[id]/unlock", () => {
     mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_cp_monthly: "mac_monthly" }));
     mockFetch.mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({
+        valid: true,
         key: "monthly_key",
         remaining_seconds: 2592000,
       }),

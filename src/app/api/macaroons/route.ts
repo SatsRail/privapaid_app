@@ -93,35 +93,37 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "No macaroon found" }, { status: 404 });
   }
 
-  try {
-    const result = await verifySatsrailToken(macaroon);
+  const result = await verifySatsrailToken(macaroon);
 
-    if (!result.ok) {
-      // Invalid or expired — remove macaroon from cookie
-      delete macaroons[product_id];
-      const status = result.remainingSeconds != null && result.remainingSeconds <= 0 ? 410 : 401;
-      const error = status === 410 ? "Access expired" : "Macaroon invalid";
-      const response = NextResponse.json({ error }, { status });
-      if (Object.keys(macaroons).length === 0) {
-        response.cookies.delete(COOKIE_NAME);
-      } else {
-        response.cookies.set(COOKIE_NAME, JSON.stringify(macaroons), {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: COOKIE_MAX_AGE,
-        });
-      }
-      return response;
-    }
-
+  if (result.status === "valid") {
     return NextResponse.json({
       key: result.key,
       key_fingerprint: result.keyFingerprint,
       remaining_seconds: result.remainingSeconds,
     });
-  } catch {
-    return NextResponse.json({ error: "Verification failed" }, { status: 502 });
   }
+
+  if (result.status === "invalid") {
+    // Portal definitively rejected the macaroon (HTTP 402) — it is either
+    // expired or signature-invalid. Safe to clear it from the cookie.
+    delete macaroons[product_id];
+    const response = NextResponse.json({ error: "Access expired" }, { status: 410 });
+    if (Object.keys(macaroons).length === 0) {
+      response.cookies.delete(COOKIE_NAME);
+    } else {
+      response.cookies.set(COOKIE_NAME, JSON.stringify(macaroons), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: COOKIE_MAX_AGE,
+      });
+    }
+    return response;
+  }
+
+  // status: "transient" — portal blip, network error, or surprising body.
+  // Do NOT delete the cookie. The macaroon may still be valid; let the
+  // client retry on next page load or heartbeat.
+  return NextResponse.json({ error: "Verification temporarily unavailable" }, { status: 502 });
 }

@@ -273,9 +273,11 @@
   "viewer.payment.unlock_failed.reference_label": "Referencia del pedido",
   "viewer.payment.unlock_failed.no_reference": "Referencia no disponible",
   "viewer.payment.unlock_failed.contact": "Contacta a {merchant} para asistencia.",
+  "viewer.payment.unlock_failed.contact_generic": "Contacta al comerciante para asistencia.",
   "viewer.payment.unlock_failed.reload": "Recargar página",
   "viewer.payment.unlock_failed.copy_reference": "Copiar referencia",
   "viewer.payment.unlock_failed.copied": "Copiado",
+  "viewer.payment.unlock_failed.copy_failed": "No se pudo copiar. Copia la referencia manualmente.",
 
   "viewer.checkout.load_error": "Error al cargar el pago. Inténtalo de nuevo.",
   "viewer.checkout.expired": "Factura expirada. Inténtalo de nuevo.",

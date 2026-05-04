@@ -273,9 +273,11 @@
   "viewer.payment.unlock_failed.reference_label": "Order reference",
   "viewer.payment.unlock_failed.no_reference": "Reference unavailable",
   "viewer.payment.unlock_failed.contact": "Contact {merchant} for support.",
+  "viewer.payment.unlock_failed.contact_generic": "Contact the merchant for support.",
   "viewer.payment.unlock_failed.reload": "Reload page",
   "viewer.payment.unlock_failed.copy_reference": "Copy reference",
   "viewer.payment.unlock_failed.copied": "Copied",
+  "viewer.payment.unlock_failed.copy_failed": "Couldn't copy. Please copy the reference manually.",
 
   "viewer.checkout.load_error": "Failed to load payment. Please try again.",
   "viewer.checkout.expired": "Invoice expired. Please try again.",

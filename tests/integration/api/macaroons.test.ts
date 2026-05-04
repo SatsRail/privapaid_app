@@ -190,7 +190,8 @@ describe("Macaroons API — PUT /api/macaroons (verify)", () => {
 
     mockFetch.mockResolvedValue({
       ok: true,
-      json: async () => ({ key: "decryption_key", remaining_seconds: 3600 }),
+      status: 200,
+      json: async () => ({ valid: true, key: "decryption_key", remaining_seconds: 3600 }),
     });
 
     const req = jsonRequest("PUT", { product_id: "prod_1" });
@@ -202,39 +203,13 @@ describe("Macaroons API — PUT /api/macaroons (verify)", () => {
     expect(body.remaining_seconds).toBe(3600);
   });
 
-  it("returns 401 and removes macaroon when SatsRail says invalid", async () => {
+  it("returns 410 and removes macaroon when portal definitively rejects (402)", async () => {
     mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_bad", prod_2: "mac_ok" }));
 
-    mockFetch.mockResolvedValue({ ok: false });
-
-    const req = jsonRequest("PUT", { product_id: "prod_1" });
-    const res = await PUT(req);
-    const body = await res.json();
-
-    expect(res.status).toBe(401);
-    expect(body.error).toBe("Macaroon invalid");
-    // prod_1 removed, prod_2 remains
-    const parsed = JSON.parse(res.cookies.get("satsrail_macaroons")!.value);
-    expect(parsed.prod_1).toBeUndefined();
-    expect(parsed.prod_2).toBe("mac_ok");
-  });
-
-  it("deletes cookie when invalid macaroon was the only one", async () => {
-    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_bad" }));
-
-    mockFetch.mockResolvedValue({ ok: false });
-
-    const req = jsonRequest("PUT", { product_id: "prod_1" });
-    const res = await PUT(req);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 410 and removes expired macaroon", async () => {
-    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_expired", prod_2: "mac_good" }));
-
     mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ remaining_seconds: 0 }),
+      ok: false,
+      status: 402,
+      json: async () => ({ valid: false, error: { code: "access_expired" } }),
     });
 
     const req = jsonRequest("PUT", { product_id: "prod_1" });
@@ -243,16 +218,19 @@ describe("Macaroons API — PUT /api/macaroons (verify)", () => {
 
     expect(res.status).toBe(410);
     expect(body.error).toBe("Access expired");
+    // prod_1 removed, prod_2 remains
     const parsed = JSON.parse(res.cookies.get("satsrail_macaroons")!.value);
     expect(parsed.prod_1).toBeUndefined();
+    expect(parsed.prod_2).toBe("mac_ok");
   });
 
-  it("deletes cookie when expired macaroon was the only one", async () => {
-    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_expired" }));
+  it("deletes cookie when 402-rejected macaroon was the only one", async () => {
+    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_bad" }));
 
     mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ remaining_seconds: -1 }),
+      ok: false,
+      status: 402,
+      json: async () => ({ valid: false, error: { code: "access_expired" } }),
     });
 
     const req = jsonRequest("PUT", { product_id: "prod_1" });
@@ -260,8 +238,46 @@ describe("Macaroons API — PUT /api/macaroons (verify)", () => {
     expect(res.status).toBe(410);
   });
 
-  it("returns 502 when fetch throws", async () => {
-    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_1" }));
+  it("returns 502 and KEEPS the macaroon when portal returns 5xx", async () => {
+    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_paid", prod_2: "mac_other" }));
+
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({}),
+    });
+
+    const req = jsonRequest("PUT", { product_id: "prod_1" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(502);
+    expect(body.error).toBe("Verification temporarily unavailable");
+    // Critical: cookie must NOT be touched on transient portal failure.
+    // res.cookies.get returns undefined when no Set-Cookie header was emitted.
+    expect(res.cookies.get("satsrail_macaroons")).toBeUndefined();
+  });
+
+  it("returns 502 and KEEPS the macaroon when portal returns 401 (merchant auth issue)", async () => {
+    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_paid" }));
+
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: "unauthorized" }),
+    });
+
+    const req = jsonRequest("PUT", { product_id: "prod_1" });
+    const res = await PUT(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(502);
+    expect(body.error).toBe("Verification temporarily unavailable");
+    expect(res.cookies.get("satsrail_macaroons")).toBeUndefined();
+  });
+
+  it("returns 502 and KEEPS the macaroon when fetch throws (network error)", async () => {
+    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_paid" }));
 
     mockFetch.mockRejectedValue(new Error("network error"));
 
@@ -270,6 +286,23 @@ describe("Macaroons API — PUT /api/macaroons (verify)", () => {
     const body = await res.json();
 
     expect(res.status).toBe(502);
-    expect(body.error).toBe("Verification failed");
+    expect(body.error).toBe("Verification temporarily unavailable");
+    expect(res.cookies.get("satsrail_macaroons")).toBeUndefined();
+  });
+
+  it("returns 502 and KEEPS the macaroon when portal body is unexpectedly shaped", async () => {
+    mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_paid" }));
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ remaining_seconds: 0 }), // missing valid:true
+    });
+
+    const req = jsonRequest("PUT", { product_id: "prod_1" });
+    const res = await PUT(req);
+
+    expect(res.status).toBe(502);
+    expect(res.cookies.get("satsrail_macaroons")).toBeUndefined();
   });
 });

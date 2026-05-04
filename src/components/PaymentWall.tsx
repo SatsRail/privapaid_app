@@ -423,12 +423,31 @@ export default function PaymentWall({
     ? [unlockFailure.orderNumber, unlockFailure.orderId].filter(Boolean).join(" / ")
     : "";
 
-  function handleCopyReference() {
+  async function handleCopyReference() {
     if (!referenceText) return;
-    navigator.clipboard.writeText(referenceText).then(() => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(referenceText);
+      } else {
+        // Fallback for older browsers / non-secure contexts: select via a temporary element
+        const ta = document.createElement("textarea");
+        ta.value = referenceText;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand?.("copy");
+        document.body.removeChild(ta);
+        if (!ok) throw new Error("execCommand copy failed");
+      }
       setReferenceCopied(true);
       setTimeout(() => setReferenceCopied(false), 2000);
-    });
+    } catch (err) {
+      Sentry.captureException(err, { tags: { context: "PaymentWall.copyReference" } });
+      // Show a brief error inline using the existing error string slot
+      setError(t("viewer.payment.unlock_failed.copy_failed"));
+      setTimeout(() => setError(""), 2500);
+    }
   }
 
   function handleReload() {
@@ -474,11 +493,11 @@ export default function PaymentWall({
         )}
       </div>
 
-      {merchantName && (
-        <p className="text-sm text-zinc-300">
-          {t("viewer.payment.unlock_failed.contact", { merchant: merchantName })}
-        </p>
-      )}
+      <p className="text-sm text-zinc-300">
+        {merchantName
+          ? t("viewer.payment.unlock_failed.contact", { merchant: merchantName })
+          : t("viewer.payment.unlock_failed.contact_generic")}
+      </p>
 
       <div className="flex w-full flex-col gap-2 sm:flex-row">
         {referenceText && (
@@ -535,7 +554,7 @@ export default function PaymentWall({
         )}
       </div>
 
-      {error && !unlockFailure && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 
       {checkoutToken && !unlockFailure && (() => {
         const activeProduct = products.find((p) => p.productId === activeProductId);

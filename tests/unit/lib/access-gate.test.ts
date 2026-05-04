@@ -246,7 +246,9 @@ describe("access-gate", () => {
       mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_valid" }));
       mockFetch.mockResolvedValue({
         ok: true,
+        status: 200,
         json: async () => ({
+          valid: true,
           key: "decrypt_key",
           key_fingerprint: "fp_verify",
           remaining_seconds: 3600,
@@ -268,7 +270,9 @@ describe("access-gate", () => {
       }));
       mockFetch.mockResolvedValue({
         ok: true,
+        status: 200,
         json: async () => ({
+          valid: true,
           key: "key_2",
           remaining_seconds: 1800,
         }),
@@ -290,19 +294,24 @@ describe("access-gate", () => {
       expect(result.productId).toBeUndefined();
     });
 
-    it("returns not granted when macaroon exists but SatsRail rejects it", async () => {
+    it("returns not granted when portal definitively rejects the macaroon (402)", async () => {
       mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_invalid" }));
-      mockFetch.mockResolvedValue({ ok: false });
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 402,
+        json: async () => ({ valid: false, error: { code: "access_expired" } }),
+      });
 
       const result = await verifyMacaroonAccess(["prod_1"]);
       expect(result.granted).toBe(false);
     });
 
-    it("returns not granted when macaroon is expired (remaining_seconds = 0)", async () => {
-      mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_expired" }));
+    it("returns not granted on transient portal failure (5xx) without granting access", async () => {
+      mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_blip" }));
       mockFetch.mockResolvedValue({
-        ok: true,
-        json: async () => ({ remaining_seconds: 0 }),
+        ok: false,
+        status: 503,
+        json: async () => ({}),
       });
 
       const result = await verifyMacaroonAccess(["prod_1"]);
@@ -320,7 +329,9 @@ describe("access-gate", () => {
       }));
       mockFetch.mockResolvedValue({
         ok: true,
+        status: 200,
         json: async () => ({
+          valid: true,
           key: "ch_key",
           remaining_seconds: 86400,
         }),
@@ -343,7 +354,9 @@ describe("access-gate", () => {
         .mockRejectedValueOnce(new Error("network error"))
         .mockResolvedValueOnce({
           ok: true,
+          status: 200,
           json: async () => ({
+            valid: true,
             key: "key_2",
             remaining_seconds: 3600,
           }),
@@ -360,7 +373,8 @@ describe("access-gate", () => {
       mockCookieStore._set("satsrail_macaroons", JSON.stringify({ prod_1: "mac_abc123" }));
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ key: "k", remaining_seconds: 100 }),
+        status: 200,
+        json: async () => ({ valid: true, key: "k", remaining_seconds: 100 }),
       });
 
       await verifyMacaroonAccess(["prod_1"]);

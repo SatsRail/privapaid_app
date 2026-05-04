@@ -24,10 +24,16 @@ vi.mock("@sentry/nextjs", () => ({
   captureMessage: (...args: unknown[]) => mockCaptureMessage(...args),
 }));
 
+let mockLocale: "en" | "es" = "en";
 vi.mock("@/i18n/useLocale", async () => {
   const { t: realT } = await import("@/i18n");
-  const boundT = (key: string, params?: Record<string, string | number>) => realT("en", key, params);
-  return { useLocale: () => ({ t: boundT, locale: "en" }) };
+  return {
+    useLocale: () => {
+      const boundT = (key: string, params?: Record<string, string | number>) =>
+        realT(mockLocale, key, params);
+      return { t: boundT, locale: mockLocale };
+    },
+  };
 });
 
 vi.mock("@/components/ui/Button", () => ({
@@ -131,6 +137,7 @@ describe("PaymentWall", () => {
     mockSession.status = "unauthenticated" as const;
     mockDecryptBlob.mockResolvedValue(new Uint8Array([1, 2, 3]));
     mockVerifyKeyFingerprint.mockResolvedValue(true);
+    mockLocale = "en";
 
     // Default: all fetches fail so we see the payment wall
     global.fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) });
@@ -889,21 +896,10 @@ describe("PaymentWall", () => {
       expect(screen.queryByText("Copy reference")).not.toBeInTheDocument();
     });
 
-    it("logs a Sentry message when the product is missing after payment", async () => {
+    it("renders the generic contact line when merchantName is not provided", async () => {
+      setupCheckout({ decryptThrows: true });
       const user = userEvent.setup();
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, init?: RequestInit) => {
-        if (url === "/api/checkout" && init?.method === "POST") {
-          return { ok: true, json: async () => ({ token: "tok" }) };
-        }
-        return { ok: false, json: async () => ({}) };
-      });
-      // Render with one product, then unlock for a productId not in the array.
-      // We achieve this by clicking, then re-rendering with a different product list.
-      // Simpler: trigger the silent failure path by simulating no-key + failed fallback.
-      const products = [
-        { ...defaultProducts[0], productId: "prod-1" },
-      ];
-      render(<PaymentWall {...defaultProps} products={products} />);
+      render(<PaymentWall {...defaultProps} />); // no merchantName
       await waitFor(() => {
         expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
       });
@@ -911,12 +907,54 @@ describe("PaymentWall", () => {
       await waitFor(() => {
         expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
       });
-      // Trigger the empty-key path with a missing product reference
-      mockDecryptBlob.mockRejectedValueOnce(new Error("decrypt"));
       await user.click(screen.getByTestId("complete-btn"));
       await waitFor(() => {
-        expect(screen.getByText("Payment received")).toBeInTheDocument();
+        expect(screen.getByText("Contact the merchant for support.")).toBeInTheDocument();
       });
+    });
+
+    it("falls back to execCommand and shows error when clipboard API is unavailable", async () => {
+      setupCheckout({ decryptThrows: true });
+      const user = await payAndFail();
+
+      // Remove clipboard from navigator to simulate non-secure context
+      const originalClipboard = navigator.clipboard;
+      Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true });
+      // Force execCommand to fail too — verify error feedback
+      const originalExecCommand = document.execCommand;
+      document.execCommand = vi.fn().mockReturnValue(false);
+
+      await user.click(screen.getByText("Copy reference"));
+      await waitFor(() => {
+        expect(screen.getByText(/Couldn't copy/)).toBeInTheDocument();
+      });
+
+      // Restore
+      Object.defineProperty(navigator, "clipboard", { value: originalClipboard, configurable: true });
+      document.execCommand = originalExecCommand;
+    });
+
+    it("renders the unlock-failed card in Spanish locale", async () => {
+      mockLocale = "es";
+      setupCheckout({ decryptThrows: true });
+      const user = userEvent.setup();
+      render(<PaymentWall {...defaultProps} merchantName="Acme Co" />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Desbloquear con Bitcoin")[0]).toBeInTheDocument();
+      });
+      await user.click(screen.getAllByText(/HD Video/)[0]);
+      await waitFor(() => {
+        expect(screen.getByTestId("checkout-overlay")).toBeInTheDocument();
+      });
+      await user.click(screen.getByTestId("complete-btn"));
+      await waitFor(() => {
+        expect(screen.getByText("Pago recibido")).toBeInTheDocument();
+      });
+      expect(screen.getByText("Falló a las")).toBeInTheDocument();
+      expect(screen.getByText("Referencia del pedido")).toBeInTheDocument();
+      expect(screen.getByText("Recargar página")).toBeInTheDocument();
+      expect(screen.getByText("Copiar referencia")).toBeInTheDocument();
+      expect(screen.getByText("Contacta a Acme Co para asistencia.")).toBeInTheDocument();
     });
   });
 
