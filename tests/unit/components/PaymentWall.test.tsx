@@ -623,16 +623,22 @@ describe("PaymentWall", () => {
 
     it("shows the unlock-failed card when key fingerprint verification fails during checkout", async () => {
       const user = userEvent.setup();
-      mockVerifyKeyFingerprint.mockResolvedValue(false);
-
+      // Fingerprint-checks pass during mount checkAccess (no stored cookie),
+      // and fail only AFTER the user pays.
       (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
         if (url === "/api/checkout" && opts?.method === "POST") {
           return { ok: true, json: async () => ({ token: "tok" }) };
         }
-        return { ok: true, json: async () => ({}) };
+        // Fail any unlock-related fetch so checkAccess doesn't unlock and
+        // doesn't trigger verifyFailure either (no transient signal).
+        return { ok: false, status: 404, json: async () => ({}) };
       });
 
-      render(<PaymentWall {...defaultProps} />);
+      // Fresh visitor — no stored macaroon — so checkAccess shows pay buttons.
+      render(<PaymentWall {...defaultProps} storedProductIds={[]} />);
+
+      // Now arrange the post-payment fingerprint failure
+      mockVerifyKeyFingerprint.mockResolvedValue(false);
       await waitFor(() => {
         expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
       });
@@ -762,16 +768,18 @@ describe("PaymentWall", () => {
 
     it("shows the unlock-failed card when decryption fails after checkout", async () => {
       const user = userEvent.setup();
-      mockDecryptBlob.mockRejectedValue(new Error("Decryption error"));
-
       (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
         if (url === "/api/checkout" && opts?.method === "POST") {
           return { ok: true, json: async () => ({ token: "tok" }) };
         }
-        return { ok: true, json: async () => ({}) };
+        return { ok: false, status: 404, json: async () => ({}) };
       });
 
-      render(<PaymentWall {...defaultProps} />);
+      // Fresh visitor — no stored macaroon — so mount checkAccess shows pay buttons.
+      render(<PaymentWall {...defaultProps} storedProductIds={[]} />);
+
+      // Decryption fails AFTER checkout completes
+      mockDecryptBlob.mockRejectedValue(new Error("Decryption error"));
       await waitFor(() => {
         expect(screen.getAllByText(/HD Video/)[0]).toBeInTheDocument();
       });
@@ -955,6 +963,104 @@ describe("PaymentWall", () => {
       expect(screen.getByText("Recargar página")).toBeInTheDocument();
       expect(screen.getByText("Copiar referencia")).toBeInTheDocument();
       expect(screen.getByText("Contacta a Acme Co para asistencia.")).toBeInTheDocument();
+    });
+  });
+
+  // -------------------------------------------------------
+  // Verify failure card (returning visitor — paid, can't verify)
+  // -------------------------------------------------------
+  describe("verify failure card", () => {
+    it("shows the verify-failed card when stored macaroon verify returns 502", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: false, status: 502, json: async () => ({ error: "Verification temporarily unavailable" }) };
+        }
+        if (url === "/api/media/media-123/unlock") {
+          return { ok: false, status: 503, json: async () => ({}) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} merchantName="Acme Co" />);
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't verify your access")).toBeInTheDocument();
+      });
+      // Pay buttons are NOT visible
+      expect(screen.queryByText("Unlock with Bitcoin")).not.toBeInTheDocument();
+      expect(screen.queryByText(/HD Video/)).not.toBeInTheDocument();
+      // Contact line uses merchant name
+      expect(screen.getByText("Contact Acme Co for support.")).toBeInTheDocument();
+      // Reload button is present
+      expect(screen.getByText("Reload page")).toBeInTheDocument();
+    });
+
+    it("shows the verify-failed card when key fingerprint mismatches on a stored macaroon", async () => {
+      mockVerifyKeyFingerprint.mockResolvedValue(false);
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: true, status: 200, json: async () => ({ key: "k", key_fingerprint: "wrong" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't verify your access")).toBeInTheDocument();
+      });
+      expect(screen.queryByText("Unlock with Bitcoin")).not.toBeInTheDocument();
+    });
+
+    it("does NOT show verify-failed card when user has no stored macaroons (fresh visitor)", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} storedProductIds={[]} />);
+      await waitFor(() => {
+        expect(screen.getAllByText("Unlock with Bitcoin")[0]).toBeInTheDocument();
+      });
+      expect(screen.queryByText("Couldn't verify your access")).not.toBeInTheDocument();
+    });
+
+    it("clears verify-failed when content unlocks via heartbeat key refresh", async () => {
+      // First: simulate a stored macaroon verify that succeeds (so we end up unlocked)
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: true, status: 200, json: async () => ({ key: "k1", key_fingerprint: "fp-1" }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByTestId("content-renderer")).toBeInTheDocument();
+      });
+      // Verify-failed card never appears in the success path
+      expect(screen.queryByText("Couldn't verify your access")).not.toBeInTheDocument();
+    });
+
+    it("reload button on verify-failed card calls window.location.reload", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url === "/api/macaroons" && opts?.method === "PUT") {
+          return { ok: false, status: 502, json: async () => ({}) };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      const reloadSpy = vi.fn();
+      Object.defineProperty(window, "location", {
+        value: { ...window.location, reload: reloadSpy },
+        writable: true,
+      });
+
+      render(<PaymentWall {...defaultProps} />);
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't verify your access")).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByText("Reload page"));
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -136,6 +136,14 @@ export default function CommentSection({
       });
       const json = await res.json();
       if (!res.ok) {
+        // Server says access is missing/expired even though we optimistically
+        // showed the form based on the cookie. Revoke optimistic access so the
+        // gating message replaces the form, and surface a clearer error.
+        if (res.status === 401 || res.status === 402) {
+          setHasAccess(false);
+          setError(t("viewer.comments.access_unverified"));
+          return;
+        }
         setError(json.error || "Failed to post comment");
         return;
       }

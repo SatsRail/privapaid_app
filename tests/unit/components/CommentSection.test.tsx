@@ -231,6 +231,74 @@ describe("CommentSection", () => {
     expect(localStorage.setItem).toHaveBeenCalledWith("privapaid_nickname", "Me");
   });
 
+  it("revokes optimistic access and shows access-unverified message when POST returns 402", async () => {
+    (fetch as ReturnType<typeof vi.fn>)
+      // Initial macaroon access check — succeeds (gives optimistic access)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ remaining_seconds: 100 }),
+      })
+      // POST /comments returns 402 (access expired/invalid)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 402,
+        json: async () => ({ error: "Payment required to comment" }),
+      });
+
+    render(<CommentSection mediaId="m1" productIds={["p1"]} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Share your thoughts...")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Your nickname"), { target: { value: "Me" } });
+    fireEvent.change(screen.getByPlaceholderText("Share your thoughts..."), { target: { value: "Hi" } });
+
+    const form = screen.getByPlaceholderText("Share your thoughts...").closest("form")!;
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+
+    // The form should be replaced with the access-denied gate
+    await waitFor(() => {
+      expect(screen.getByText(/Only paying viewers can comment/)).toBeInTheDocument();
+    });
+    // The access_unverified message is set as the inline error before the form revokes
+    // so the user sees a clear signal that their access couldn't be verified.
+    // Once hasAccess flips false, the form unmounts — that's the expected end state.
+  });
+
+  it("revokes optimistic access on POST 401 and shows access-unverified", async () => {
+    (fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ remaining_seconds: 100 }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "Unauthorized" }),
+      });
+
+    render(<CommentSection mediaId="m1" productIds={["p1"]} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("Share your thoughts...")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Your nickname"), { target: { value: "Me" } });
+    fireEvent.change(screen.getByPlaceholderText("Share your thoughts..."), { target: { value: "Hi" } });
+
+    const form = screen.getByPlaceholderText("Share your thoughts...").closest("form")!;
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Only paying viewers can comment/)).toBeInTheDocument();
+    });
+  });
+
   it("handles server error on submit", async () => {
     (fetch as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({

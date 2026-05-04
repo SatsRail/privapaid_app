@@ -75,6 +75,10 @@ export default function PaymentWall({
     orderId: string | null;
     failedAt: number;
   } | null>(null);
+  // Set when the user has a stored macaroon for this media but the mount-time
+  // checkAccess can't unlock content (transient verify, network failure, etc).
+  // Different from unlockFailure (which only fires on a fresh checkout).
+  const [verifyFailure, setVerifyFailure] = useState<{ failedAt: number } | null>(null);
   const [referenceCopied, setReferenceCopied] = useState(false);
   const lastKeyRef = useRef<string | null>(null);
 
@@ -87,6 +91,13 @@ export default function PaymentWall({
         ? products.filter((p) => stored.includes(p.productId))
         : [];
 
+      // Track whether we saw a TRANSIENT failure signal (502, network, or
+      // surprising response shape). On a transient, the user's stored
+      // macaroon is likely still valid — show a "couldn't verify" card so
+      // they don't think they need to re-pay. Definitive rejections (410)
+      // mean the cookie was cleaned server-side; fall through to pay buttons.
+      let sawTransient = false;
+
       for (const product of candidateProducts) {
         try {
           const res = await fetch("/api/macaroons", {
@@ -95,13 +106,22 @@ export default function PaymentWall({
             body: JSON.stringify({ product_id: product.productId }),
           });
 
-          if (!res.ok) continue;
+          if (!res.ok) {
+            if (res.status === 502) sawTransient = true;
+            // 410 = definitive rejection — cookie cleaned, fall through to pay buttons
+            continue;
+          }
 
           const data = await res.json();
 
           // Verify key authenticity before decryption
           const fingerprint = data.key_fingerprint || product.keyFingerprint;
-          if (!(await verifyKeyFingerprint(data.key, fingerprint))) continue;
+          if (!(await verifyKeyFingerprint(data.key, fingerprint))) {
+            // Key fingerprint mismatch despite valid macaroon — wrong key
+            // delivered or key rotation in progress. Treat as transient.
+            sawTransient = true;
+            continue;
+          }
 
           // Valid macaroon — decrypt content
           const bytes = await decryptBlob(product.encryptedBlob, data.key, product.productId);
@@ -113,7 +133,8 @@ export default function PaymentWall({
           }
           return;
         } catch {
-          // Skip this product
+          // Network error inside macaroon flow — treat as transient
+          sawTransient = true;
         }
       }
 
@@ -134,12 +155,25 @@ export default function PaymentWall({
                 setRemainingSeconds(data.remaining_seconds);
               }
               return;
+            } else {
+              sawTransient = true;
             }
           }
+        } else if (unlockRes.status >= 500) {
+          sawTransient = true;
         }
       } catch (err) {
         // Direct unlock not available — show payment wall
         Sentry.captureException(err, { tags: { context: "PaymentWall.directUnlock" }, extra: { mediaId } });
+        sawTransient = true;
+      }
+
+      // Surface a "couldn't verify" card only when there's an actual signal
+      // that something transient went wrong. Otherwise pay buttons render
+      // as the default — including the case where the cookie was cleaned
+      // due to a definitive rejection earlier in this same flow.
+      if (sawTransient) {
+        setVerifyFailure({ failedAt: Date.now() });
       }
     }
 
@@ -148,7 +182,10 @@ export default function PaymentWall({
 
   // Clear any stale failure state if decryption succeeds via any path
   useEffect(() => {
-    if (decryptedBytes) setUnlockFailure(null);
+    if (decryptedBytes) {
+      setUnlockFailure(null);
+      setVerifyFailure(null);
+    }
   }, [decryptedBytes]);
 
   async function handleUnlock(productId: string) {
@@ -520,7 +557,50 @@ export default function PaymentWall({
     </div>
   ) : null;
 
-  const cardContent = unlockFailure ? errorCard : productButtons;
+  const verifyCard = verifyFailure ? (
+    <div className="flex w-full max-w-md flex-col items-center gap-4 px-2 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-400">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <h3 className="text-lg font-semibold text-white">
+          {t("viewer.payment.verify_failed.title")}
+        </h3>
+        <p className="text-sm text-zinc-300">
+          {t("viewer.payment.verify_failed.body")}
+        </p>
+      </div>
+
+      <div className="w-full rounded-lg border border-zinc-700 bg-zinc-800/60 p-3 text-left">
+        <div className="flex items-center justify-between text-xs uppercase tracking-wide text-zinc-400">
+          <span>{t("viewer.payment.unlock_failed.timestamp_label")}</span>
+          <span className="font-mono text-[11px] tabular-nums text-zinc-300 normal-case">
+            {new Date(verifyFailure.failedAt).toLocaleString(locale)}
+          </span>
+        </div>
+      </div>
+
+      <p className="text-sm text-zinc-300">
+        {merchantName
+          ? t("viewer.payment.unlock_failed.contact", { merchant: merchantName })
+          : t("viewer.payment.unlock_failed.contact_generic")}
+      </p>
+
+      <button
+        onClick={handleReload}
+        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--theme-primary)] px-3 py-2 text-sm font-semibold text-black transition-colors"
+      >
+        {t("viewer.payment.unlock_failed.reload")}
+      </button>
+    </div>
+  ) : null;
+
+  const cardContent = unlockFailure ? errorCard : verifyFailure ? verifyCard : productButtons;
 
   // Payment wall
   return (
@@ -556,7 +636,7 @@ export default function PaymentWall({
 
       {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 
-      {checkoutToken && !unlockFailure && (() => {
+      {checkoutToken && !unlockFailure && !verifyFailure && (() => {
         const activeProduct = products.find((p) => p.productId === activeProductId);
         return (
           <CheckoutOverlay

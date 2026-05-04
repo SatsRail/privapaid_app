@@ -278,6 +278,8 @@
   "viewer.payment.unlock_failed.copy_reference": "Copiar referencia",
   "viewer.payment.unlock_failed.copied": "Copiado",
   "viewer.payment.unlock_failed.copy_failed": "No se pudo copiar. Copia la referencia manualmente.",
+  "viewer.payment.verify_failed.title": "No pudimos verificar tu acceso",
+  "viewer.payment.verify_failed.body": "Tenemos registro de tu pago para este contenido, pero no pudimos verificar tu acceso en este momento. Intenta recargar la página. Si el problema persiste, contacta al comerciante.",
 
   "viewer.checkout.load_error": "Error al cargar el pago. Inténtalo de nuevo.",
   "viewer.checkout.expired": "Factura expirada. Inténtalo de nuevo.",
@@ -296,6 +298,7 @@
   "viewer.comments.paywall_message": "Solo los usuarios que han pagado pueden comentar. Desbloquea este contenido para unirte a la conversación.",
   "viewer.comments.empty": "Aún no hay comentarios.",
   "viewer.comments.error": "Algo salió mal",
+  "viewer.comments.access_unverified": "No pudimos verificar tu acceso. Recarga la página e inténtalo de nuevo.",
 
   "viewer.exchange_guide.title": "Obtener Bitcoin",
   "viewer.exchange_guide.description": "Para pagar con Bitcoin Lightning, necesitas una billetera o cuenta de exchange compatible.",

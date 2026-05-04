@@ -278,6 +278,8 @@
   "viewer.payment.unlock_failed.copy_reference": "Copy reference",
   "viewer.payment.unlock_failed.copied": "Copied",
   "viewer.payment.unlock_failed.copy_failed": "Couldn't copy. Please copy the reference manually.",
+  "viewer.payment.verify_failed.title": "Couldn't verify your access",
+  "viewer.payment.verify_failed.body": "We see you've paid for this content, but we couldn't verify your access right now. Try reloading the page. If the problem persists, contact the merchant.",
 
   "viewer.checkout.load_error": "Failed to load payment. Please try again.",
   "viewer.checkout.expired": "Invoice expired. Please try again.",
@@ -296,6 +298,7 @@
   "viewer.comments.paywall_message": "Only paying viewers can comment. Unlock this content to join the discussion.",
   "viewer.comments.empty": "No comments yet.",
   "viewer.comments.error": "Something went wrong",
+  "viewer.comments.access_unverified": "We couldn't verify your access. Please reload the page and try again.",
 
   "viewer.exchange_guide.title": "Get Bitcoin",
   "viewer.exchange_guide.description": "To pay with Bitcoin Lightning, you need a Lightning-enabled wallet or exchange account.",
