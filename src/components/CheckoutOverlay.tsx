@@ -10,7 +10,13 @@ interface CheckoutOverlayProps {
   merchantName?: string;
   priceCents?: number;
   priceCurrency?: string;
-  onComplete: (data: { key: string; macaroon: string; remaining_seconds: number }) => void;
+  onComplete: (data: {
+    key: string;
+    macaroon: string;
+    remaining_seconds: number;
+    order_number: string | null;
+    order_id: string | null;
+  }) => void;
   onClose: () => void;
 }
 
@@ -92,7 +98,13 @@ export default function CheckoutOverlay({
               },
             });
           }
-          onComplete({ key, macaroon, remaining_seconds: data.access_duration_seconds ?? 0 });
+          onComplete({
+            key,
+            macaroon,
+            remaining_seconds: data.access_duration_seconds ?? 0,
+            order_number: data.order_number ?? null,
+            order_id: data.order_id ?? null,
+          });
           return;
         }
 

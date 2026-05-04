@@ -124,6 +124,8 @@ interface CheckoutStatus {
   access_token?: string;
   access_duration_seconds?: number;
   redirect_url?: string;
+  order_id?: string;
+  order_number?: string;
 }
 
 class SatsRailClient {

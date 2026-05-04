@@ -342,6 +342,41 @@ describe("CheckoutOverlay", () => {
           key: "decryption-key",
           macaroon: "macaroon-token",
           remaining_seconds: 3600,
+          order_number: null,
+          order_id: null,
+        });
+      });
+    });
+
+    it("propagates order_number and order_id when present", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => {
+        if (typeof url === "string" && url.includes("/qr")) {
+          return { ok: true, text: async () => "<svg>QR</svg>" };
+        }
+        if (typeof url === "string" && url.includes("/status")) {
+          return {
+            ok: true,
+            json: async () => ({
+              status: "completed",
+              items: [{ key: "decryption-key" }],
+              access_token: "macaroon-token",
+              access_duration_seconds: 86400,
+              order_number: "ORD-ABCDEF1234567890",
+              order_id: "uuid-123",
+            }),
+          };
+        }
+        return { ok: false };
+      });
+
+      render(<CheckoutOverlay {...defaultProps} />);
+      await waitFor(() => {
+        expect(defaultProps.onComplete).toHaveBeenCalledWith({
+          key: "decryption-key",
+          macaroon: "macaroon-token",
+          remaining_seconds: 86400,
+          order_number: "ORD-ABCDEF1234567890",
+          order_id: "uuid-123",
         });
       });
     });
@@ -450,6 +485,8 @@ describe("CheckoutOverlay", () => {
           key: "",
           macaroon: "",
           remaining_seconds: 0,
+          order_number: null,
+          order_id: null,
         });
       });
     });

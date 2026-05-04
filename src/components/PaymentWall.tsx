@@ -70,6 +70,12 @@ export default function PaymentWall({
   const [error, setError] = useState("");
   const [exchangeModalOpen, setExchangeModalOpen] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const [unlockFailure, setUnlockFailure] = useState<{
+    orderNumber: string | null;
+    orderId: string | null;
+    failedAt: number;
+  } | null>(null);
+  const [referenceCopied, setReferenceCopied] = useState(false);
   const lastKeyRef = useRef<string | null>(null);
 
   // On mount: only verify products that the server confirmed have stored macaroons
@@ -140,6 +146,11 @@ export default function PaymentWall({
     checkAccess();
   }, [mediaId, products, storedProductIds]);
 
+  // Clear any stale failure state if decryption succeeds via any path
+  useEffect(() => {
+    if (decryptedBytes) setUnlockFailure(null);
+  }, [decryptedBytes]);
+
   async function handleUnlock(productId: string) {
     setLoading(true);
     setError("");
@@ -172,11 +183,25 @@ export default function PaymentWall({
   }
 
   const handleCheckoutComplete = useCallback(
-    async (data: { key: string; macaroon: string }) => {
+    async (data: {
+      key: string;
+      macaroon: string;
+      remaining_seconds?: number;
+      order_number: string | null;
+      order_id: string | null;
+    }) => {
       if (!activeProductId) {
         setCheckoutToken(null);
         return;
       }
+
+      const orderNumber = data.order_number ?? null;
+      const orderId = data.order_id ?? null;
+      const recordFailure = () => {
+        setUnlockFailure({ orderNumber, orderId, failedAt: Date.now() });
+        setError("");
+        setCheckoutToken(null);
+      };
 
       // Store macaroon in httpOnly cookie via server — must complete before
       // HeartbeatManager's first tick, otherwise verify finds no cookie and
@@ -219,7 +244,12 @@ export default function PaymentWall({
       // Verify key authenticity and decrypt content
       const product = products.find((p) => p.productId === activeProductId);
       if (!product) {
-        setCheckoutToken(null);
+        Sentry.captureMessage("Checkout completed but product missing in PaymentWall", {
+          level: "error",
+          tags: { context: "PaymentWall.missingProduct" },
+          extra: { mediaId, activeProductId },
+        });
+        recordFailure();
         return;
       }
 
@@ -227,8 +257,12 @@ export default function PaymentWall({
       if (data.key) {
         try {
           if (!(await verifyKeyFingerprint(data.key, product.keyFingerprint))) {
-            setError("Key authenticity verification failed");
-            setCheckoutToken(null);
+            Sentry.captureMessage("Key fingerprint mismatch after payment", {
+              level: "error",
+              tags: { context: "PaymentWall.fingerprint" },
+              extra: { mediaId, activeProductId },
+            });
+            recordFailure();
             return;
           }
           const bytes = await decryptBlob(product.encryptedBlob, data.key, product.productId);
@@ -263,8 +297,7 @@ export default function PaymentWall({
         Sentry.captureException(err, { tags: { context: "PaymentWall.unlockFallback" }, extra: { mediaId, activeProductId } });
       }
 
-      setError(t("viewer.payment.unlock_failed_retry"));
-      setCheckoutToken(null);
+      recordFailure();
     },
     [activeProductId, products, session, mediaId]
   );
@@ -386,6 +419,90 @@ export default function PaymentWall({
     </div>
   );
 
+  const referenceText = unlockFailure
+    ? [unlockFailure.orderNumber, unlockFailure.orderId].filter(Boolean).join(" / ")
+    : "";
+
+  function handleCopyReference() {
+    if (!referenceText) return;
+    navigator.clipboard.writeText(referenceText).then(() => {
+      setReferenceCopied(true);
+      setTimeout(() => setReferenceCopied(false), 2000);
+    });
+  }
+
+  function handleReload() {
+    window.location.reload();
+  }
+
+  const errorCard = unlockFailure ? (
+    <div className="flex w-full max-w-md flex-col items-center gap-4 px-2 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-400">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <h3 className="text-lg font-semibold text-white">
+          {t("viewer.payment.unlock_failed.title")}
+        </h3>
+        <p className="text-sm text-zinc-300">
+          {t("viewer.payment.unlock_failed.body")}
+        </p>
+      </div>
+
+      <div className="w-full rounded-lg border border-zinc-700 bg-zinc-800/60 p-3 text-left">
+        <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-wide text-zinc-400">
+          <span>{t("viewer.payment.unlock_failed.timestamp_label")}</span>
+          <span className="font-mono text-[11px] tabular-nums text-zinc-300 normal-case">
+            {new Date(unlockFailure.failedAt).toLocaleString(locale)}
+          </span>
+        </div>
+        <div className="text-xs uppercase tracking-wide text-zinc-400">
+          {t("viewer.payment.unlock_failed.reference_label")}
+        </div>
+        <div className="mt-1 break-all font-mono text-sm text-amber-300">
+          {unlockFailure.orderNumber || unlockFailure.orderId || t("viewer.payment.unlock_failed.no_reference")}
+        </div>
+        {unlockFailure.orderNumber && unlockFailure.orderId && (
+          <div className="mt-1 break-all font-mono text-[11px] text-zinc-500">
+            {unlockFailure.orderId}
+          </div>
+        )}
+      </div>
+
+      {merchantName && (
+        <p className="text-sm text-zinc-300">
+          {t("viewer.payment.unlock_failed.contact", { merchant: merchantName })}
+        </p>
+      )}
+
+      <div className="flex w-full flex-col gap-2 sm:flex-row">
+        {referenceText && (
+          <button
+            onClick={handleCopyReference}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+          >
+            {referenceCopied
+              ? t("viewer.payment.unlock_failed.copied")
+              : t("viewer.payment.unlock_failed.copy_reference")}
+          </button>
+        )}
+        <button
+          onClick={handleReload}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--theme-primary)] px-3 py-2 text-sm font-semibold text-black transition-colors"
+        >
+          {t("viewer.payment.unlock_failed.reload")}
+        </button>
+      </div>
+    </div>
+  ) : null;
+
+  const cardContent = unlockFailure ? errorCard : productButtons;
+
   // Payment wall
   return (
     <div className="mb-6">
@@ -393,7 +510,7 @@ export default function PaymentWall({
         {mediaType === "photo_set" ? (
           // Photo set: black canvas with centered buttons
           <div className="flex flex-col items-center justify-center bg-black px-4 py-12 min-h-[320px]">
-            {productButtons}
+            {cardContent}
           </div>
         ) : (
           <>
@@ -406,21 +523,21 @@ export default function PaymentWall({
                 />
                 <div className="absolute inset-0 bg-black/40" />
                 <div className="relative z-10">
-                  {productButtons}
+                  {cardContent}
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center px-4 py-6">
-                {productButtons}
+                {cardContent}
               </div>
             )}
           </>
         )}
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      {error && !unlockFailure && <p className="mt-2 text-sm text-red-400">{error}</p>}
 
-      {checkoutToken && (() => {
+      {checkoutToken && !unlockFailure && (() => {
         const activeProduct = products.find((p) => p.productId === activeProductId);
         return (
           <CheckoutOverlay
