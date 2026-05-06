@@ -4,7 +4,7 @@
 [![CodeQL](https://github.com/SatsRail/privapaid_app/actions/workflows/codeql.yml/badge.svg)](https://github.com/SatsRail/privapaid_app/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/SatsRail/privapaid_app/branch/main/graph/badge.svg)](https://codecov.io/gh/SatsRail/privapaid_app)
 
-Open-source, encryption-first content platform powered by [SatsRail](https://satsrail.com) Bitcoin Lightning payments. Sell any type of media — video, audio, articles, photo sets, podcasts — with instant, non-custodial payments. No payment processor accounts, no chargebacks, no middlemen.
+Open-source, encryption-first content platform powered by [SatsRail](https://www.satsrail.com/) Bitcoin Lightning payments. Sell any type of media — video, audio, articles, photo sets, podcasts — with instant, non-custodial payments. No payment processor accounts, no chargebacks, no middlemen.
 
 All content is encrypted at rest. The server never stores plaintext, never decrypts content, and never touches customer funds. Decryption happens entirely in the buyer's browser after payment. SatsRail manages encryption keys and payment verification but never sees your content.
 
