@@ -151,6 +151,7 @@ describe("GET /api/admin/export", () => {
       product_price_cents: 500,
       product_currency: "USD",
       product_access_duration_seconds: 86400,
+      product_external_ref: "md_custom_99",
     });
 
     const res = await GET();
@@ -161,7 +162,60 @@ describe("GET /api/admin/export", () => {
       price_cents: 500,
       currency: "USD",
       access_duration_seconds: 86400,
+      external_ref: "md_custom_99",
     });
+  });
+
+  it("exports product external_ref derived from media ref when no cached value", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },
+    });
+
+    const channel = await createChannel({ name: "Legacy", slug: "legacy-ch" });
+    const media = await createMedia(String(channel._id), {
+      name: "Legacy Video",
+      source_url: "https://example.com/legacy.mp4",
+    });
+
+    await MediaProduct.create({
+      media_id: media._id,
+      satsrail_product_id: "prod_legacy",
+      encrypted_source_url: "encrypted-blob",
+      key_fingerprint: "fp",
+      product_name: "Legacy Access",
+      product_price_cents: 100,
+      product_currency: "USD",
+      // Note: no product_external_ref — simulating legacy data before the column existed
+    });
+
+    const res = await GET();
+    const body = JSON.parse(await res.text());
+
+    expect(body.channels[0].media[0].product.external_ref).toBe(`md_${media.ref}`);
+  });
+
+  it("exports channel product external_ref derived from channel ref when no cached value", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },
+    });
+
+    const ChannelProduct = (await import("@/models/ChannelProduct")).default;
+    const channel = await createChannel({ name: "Bundle", slug: "bundle-ch" });
+
+    await ChannelProduct.create({
+      channel_id: channel._id,
+      satsrail_product_id: "prod_bundle",
+      key_fingerprint: "fp_bundle",
+      encrypted_media: [],
+      product_name: "Bundle Access",
+      product_price_cents: 1000,
+      product_currency: "USD",
+    });
+
+    const res = await GET();
+    const body = JSON.parse(await res.text());
+
+    expect(body.channels[0].product.external_ref).toBe(`ch_${channel.ref}`);
   });
 
   it("sets Content-Disposition header for file download", async () => {

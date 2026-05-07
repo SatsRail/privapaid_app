@@ -216,7 +216,7 @@ async function importChannelProductsPhase(
           currency: chData.product.currency,
           access_duration_seconds: chData.product.access_duration_seconds,
           product_type_id: channelDoc.satsrail_product_type_id,
-          external_ref: `ch_${channel.ref}`,
+          external_ref: chData.product.external_ref || `ch_${channel.ref}`,
         },
         channelDoc._id,
         api,

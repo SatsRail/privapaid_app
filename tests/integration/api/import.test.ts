@@ -538,6 +538,138 @@ describe("POST /api/admin/import", () => {
     expect(ch!.media_count).toBe(3);
   });
 
+  it("honors JSON product.external_ref when creating a SatsRail product", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },
+    });
+
+    const productKey = generateProductKey();
+    mockCreateProductType.mockResolvedValue({ id: "pt_ext" });
+    mockCreateProduct.mockResolvedValue({ id: "prod_ext" });
+    mockGetProductKey.mockResolvedValue({ key: productKey, key_fingerprint: "fp_ext" });
+
+    const res = await POST(
+      importRequest({
+        version: "1.0",
+        channels: [
+          {
+            slug: "ext-channel",
+            name: "External Channel",
+            media: [
+              {
+                name: "Custom Ref Video",
+                source_url: "https://example.com/x.mp4",
+                product: {
+                  name: "Custom",
+                  price_cents: 200,
+                  external_ref: "md_custom_77",
+                },
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    const body = await readSSEResult(res);
+    expect((body.results.media as { created: number }).created).toBe(1);
+
+    expect(mockCreateProduct).toHaveBeenCalledWith(
+      "sk_live_test_key",
+      expect.objectContaining({ external_ref: "md_custom_77" })
+    );
+    const mediaProducts = await MediaProduct.find().lean();
+    expect(mediaProducts[0].product_external_ref).toBe("md_custom_77");
+  });
+
+  it("reuses existing SatsRail product when JSON external_ref matches an existing one", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },
+    });
+
+    const productKey = generateProductKey();
+    mockCreateProductType.mockResolvedValue({ id: "pt_reuse" });
+    // listProducts returns a match — createProduct should NOT be called
+    mockListProducts.mockResolvedValue({
+      data: [{ id: "prod_existing", external_ref: "md_existing_5" }],
+    });
+    mockUpdateProduct.mockResolvedValue({});
+    mockGetProductKey.mockResolvedValue({ key: productKey, key_fingerprint: "fp_reuse" });
+
+    const res = await POST(
+      importRequest({
+        version: "1.0",
+        channels: [
+          {
+            slug: "reuse-channel",
+            name: "Reuse Channel",
+            media: [
+              {
+                name: "Reused Video",
+                source_url: "https://example.com/r.mp4",
+                product: {
+                  name: "Reused",
+                  price_cents: 300,
+                  external_ref: "md_existing_5",
+                },
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    const body = await readSSEResult(res);
+    const mediaR = body.results.media as { created: number; errors: unknown[] };
+    expect(mediaR.created).toBe(1);
+    expect(mediaR.errors).toHaveLength(0);
+
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+    expect(mockUpdateProduct).toHaveBeenCalled();
+
+    const mediaProducts = await MediaProduct.find().lean();
+    expect(mediaProducts).toHaveLength(1);
+    expect(mediaProducts[0].satsrail_product_id).toBe("prod_existing");
+    expect(mediaProducts[0].product_external_ref).toBe("md_existing_5");
+  });
+
+  it("falls back to md_{ref} when JSON product has no external_ref", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },
+    });
+
+    const productKey = generateProductKey();
+    mockCreateProductType.mockResolvedValue({ id: "pt_fallback" });
+    mockCreateProduct.mockResolvedValue({ id: "prod_fallback" });
+    mockGetProductKey.mockResolvedValue({ key: productKey, key_fingerprint: "fp_fallback" });
+
+    const res = await POST(
+      importRequest({
+        version: "1.0",
+        channels: [
+          {
+            slug: "fb-channel",
+            name: "Fallback Channel",
+            media: [
+              {
+                name: "Fallback Video",
+                source_url: "https://example.com/fb.mp4",
+                product: { name: "Plain", price_cents: 100 },
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    await readSSEResult(res);
+    const media = await Media.findOne({ name: "Fallback Video" }).lean();
+    expect(mockCreateProduct).toHaveBeenCalledWith(
+      "sk_live_test_key",
+      expect.objectContaining({ external_ref: `md_${media!.ref}` })
+    );
+  });
+
   it("creates product type for existing channel when importing media with products", async () => {
     mockAuth.mockResolvedValue({
       user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },

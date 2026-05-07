@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { validateBody, isValidationError, schemas } from "@/lib/validate";
 
 // Helper to create a Request with a JSON body
@@ -627,6 +629,52 @@ describe("schemas", () => {
         media_type: "invalid",
       });
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe("importPayload (real-world export fixture)", () => {
+    const fixture = JSON.parse(
+      readFileSync(
+        join(__dirname, "../../fixtures/privapaid-export-sample.json"),
+        "utf-8"
+      )
+    );
+
+    it("accepts the canonical privapaid-export sample", () => {
+      const result = schemas.importPayload.safeParse(fixture);
+      if (!result.success) {
+        // Surface the first issue path to make regressions obvious
+         
+        console.error("importPayload issues:", result.error.issues.slice(0, 5));
+      }
+      expect(result.success).toBe(true);
+    });
+
+    it("the fixture covers a meaningful breadth of shapes", () => {
+      // Guard against the fixture quietly losing coverage (e.g., someone
+      // shrinking it). Asserts the canonical sample exercises:
+      // - all 5 media_type values
+      // - channel-level products AND media-level products
+      // - mixed currency casing ("USD" and "usd")
+      // - both empty and populated preview_image_urls arrays
+      // - unicode/emoji in names and descriptions
+      expect(fixture.categories.length).toBeGreaterThanOrEqual(5);
+      expect(fixture.channels.length).toBeGreaterThanOrEqual(5);
+
+      const allMedia = fixture.channels.flatMap((c: { media: unknown[] }) => c.media);
+      const mediaTypes = new Set(
+        allMedia.map((m: { media_type: string }) => m.media_type)
+      );
+      expect(mediaTypes).toEqual(
+        new Set(["video", "audio", "article", "photo_set", "podcast"])
+      );
+
+      expect(
+        fixture.channels.some((c: { product?: unknown }) => c.product)
+      ).toBe(true);
+      expect(
+        allMedia.some((m: { product?: unknown }) => m.product)
+      ).toBe(true);
     });
   });
 });

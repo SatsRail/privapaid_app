@@ -23,7 +23,9 @@ async function syncProductCaches(secretKey: string): Promise<number> {
       productMap.set(p.id, {
         product_name: p.name, product_price_cents: p.price_cents,
         product_currency: p.currency, product_access_duration_seconds: p.access_duration_seconds,
-        product_status: p.status, product_slug: p.slug, synced_at: new Date(),
+        product_status: p.status, product_slug: p.slug,
+        product_external_ref: p.external_ref ?? null,
+        synced_at: new Date(),
       });
     }
 

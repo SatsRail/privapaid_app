@@ -1,0 +1,954 @@
+{
+  "version": "1.0",
+  "exported_at": "2026-05-06T20:59:33.660Z",
+  "categories": [
+    {
+      "slug": "gastronomia",
+      "name": "Gastronomía",
+      "position": 1,
+      "active": true
+    },
+    {
+      "slug": "bitcoin-education",
+      "name": "Bitcoin Education",
+      "position": 2,
+      "active": true
+    },
+    {
+      "slug": "photography",
+      "name": "Photography",
+      "position": 3,
+      "active": true
+    },
+    {
+      "slug": "independent-film",
+      "name": "Independent Film",
+      "position": 4,
+      "active": true
+    },
+    {
+      "slug": "music-podcasts",
+      "name": "Music & Podcasts",
+      "position": 5,
+      "active": true
+    },
+    {
+      "slug": "written-word",
+      "name": "Written Word",
+      "position": 6,
+      "active": true
+    },
+    {
+      "slug": "streaming-platforms",
+      "name": "Streaming Platforms",
+      "position": 7,
+      "active": true
+    }
+  ],
+  "channels": [
+    {
+      "ref": 1,
+      "slug": "sabores-de-la-costa",
+      "name": "Sabores de la Costa",
+      "bio": "La cocina del Caribe colombiano en tu propia casa. Arroz con coco doradito, arepas de huevo crujientes, sancochos de pescado fresco y cazuelas de mariscos como las que hacen las abuelas en Barranquilla y Cartagena. ¡Puro sabor costeño!",
+      "category_slug": "gastronomia",
+      "nsfw": false,
+      "social_links": {
+        "youtube": "https://www.youtube.com/@CocinaConNelu"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "product": {
+        "name": "Sabores de la Costa – Acceso Completo",
+        "price_cents": 3,
+        "currency": "USD",
+        "access_duration_seconds": 2592000
+      },
+      "media": [
+        {
+          "ref": 1,
+          "name": "Arroz con Coco de la Costa Caribe",
+          "description": "El arroz con coco es la joya más preciada de la cocina caribeña colombiana. Aprende el secreto que guardan las abuelas de la Costa para lograr ese color dorado perfecto, ese sabor dulce y ahumado que no tiene comparación. Coco rallado fresco, arroz largo, azúcar y el punto exacto de sal: así se hace el auténtico arroz con coco de Barranquilla a Santa Marta.",
+          "source_url": "https://www.youtube.com/watch?v=s_718oAImHs",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/s_718oAImHs/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/s_718oAImHs/1.jpg",
+            "https://img.youtube.com/vi/s_718oAImHs/2.jpg",
+            "https://img.youtube.com/vi/s_718oAImHs/3.jpg"
+          ],
+          "position": 1,
+          "product": {
+            "name": "Arroz con Coco – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 2,
+          "name": "Arepas de Huevo Costeñas",
+          "description": "La arepa de huevo es el desayuno rey de la Costa Atlántica. Crujiente por fuera, suavecita por dentro, y con un huevo entero adentro que te explota en la boca. En este video te enseñamos paso a paso cómo lograr esa masa perfecta, la temperatura del aceite ideal y el truco para que el huevo quede en su punto sin que se reviente la arepa. ¡Un clásico de Luruaco que no puedes perderte!",
+          "source_url": "https://www.youtube.com/watch?v=P1fDrHSeSXs",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/P1fDrHSeSXs/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/P1fDrHSeSXs/1.jpg",
+            "https://img.youtube.com/vi/P1fDrHSeSXs/2.jpg",
+            "https://img.youtube.com/vi/P1fDrHSeSXs/3.jpg"
+          ],
+          "position": 2,
+          "product": {
+            "name": "Arepas de Huevo – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 3,
+          "name": "Sancocho de Pescado Caribeño",
+          "description": "El sancocho de pescado costeño es el plato de los domingos en familia, el que se cocina en la orilla del río o en el patio de la casa con leña. Pargo rojo, yuca, ñame, plátano verde, cebolla larga, cilantro cimarrón y el infaltable achiote para darle ese color tan especial. Una sopa que reconforta el alma y que huele a Colombia desde que empieza a hervir.",
+          "source_url": "https://www.youtube.com/watch?v=cVViI1GGLQM",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/cVViI1GGLQM/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/cVViI1GGLQM/1.jpg",
+            "https://img.youtube.com/vi/cVViI1GGLQM/2.jpg",
+            "https://img.youtube.com/vi/cVViI1GGLQM/3.jpg"
+          ],
+          "position": 3,
+          "product": {
+            "name": "Sancocho de Pescado – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 4,
+          "name": "Cazuela de Mariscos Colombiana",
+          "description": "Una probadita gratis de lo que te espera en este canal. Mira cómo preparamos una cremosa y deliciosa cazuela de mariscos al estilo colombiano: camarones, calamares, almejas y cangrejo bañados en una salsa de coco y hogao que te va a dejar sin palabras. ¡Suscríbete para acceder a todas las recetas!",
+          "source_url": "https://www.youtube.com/watch?v=J_0qC2ZJMDc",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/J_0qC2ZJMDc/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/J_0qC2ZJMDc/1.jpg",
+            "https://img.youtube.com/vi/J_0qC2ZJMDc/2.jpg",
+            "https://img.youtube.com/vi/J_0qC2ZJMDc/3.jpg"
+          ],
+          "position": 4,
+          "product": {
+            "name": "Cazuela de Mariscos – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 2,
+      "slug": "tierra-paisa",
+      "name": "Tierra Paisa",
+      "bio": "Bandeja paisa completa con todo el gusto, frijoles antioqueños con pezuña que se deshacen solos, y arepas de chócolo con queso derretido que gotea. La cocina de Antioquia y el Eje Cafetero: generosa, contundente y llena de tradición. Para los que comen con ganas.",
+      "category_slug": "gastronomia",
+      "nsfw": false,
+      "social_links": {
+        "youtube": "https://www.youtube.com/@mantequiandoconadriana"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "product": {
+        "name": "Tierra Paisa – Acceso Completo",
+        "price_cents": 3,
+        "currency": "USD",
+        "access_duration_seconds": 2592000
+      },
+      "media": [
+        {
+          "ref": 5,
+          "name": "Bandeja Paisa Completa – El Rey de la Mesa Antioqueña",
+          "description": "La bandeja paisa es el plato más famoso de Colombia y el orgullo de Antioquia. Frijoles rojos, arroz blanco, carne molida, chicharrón crujiente, chorizo paisa, huevo frito, tajadas de plátano maduro, aguacate y arepa de maíz: todo junto en una misma bandeja. En este video completo aprendemos a hacer cada componente desde cero y a montarlo como un restaurante de Medellín. Para los que comen con el corazón.",
+          "source_url": "https://www.youtube.com/watch?v=GVhfGP-k8z0",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/GVhfGP-k8z0/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/GVhfGP-k8z0/1.jpg",
+            "https://img.youtube.com/vi/GVhfGP-k8z0/2.jpg",
+            "https://img.youtube.com/vi/GVhfGP-k8z0/3.jpg"
+          ],
+          "position": 1,
+          "product": {
+            "name": "Bandeja Paisa – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 6,
+          "name": "Frijoles Antioqueños con Pezuña",
+          "description": "Los frijoles antioqueños son el alma de la cocina paisa. Frijoles cargamanto o bola roja cocinados despacio con pezuña de cerdo, hogao, cebolla, tomate y comino hasta que queden cremosos, espesos y con un sabor que te transporta a una finca de Rionegro. Se sirven con arroz, chicharrón y aguacate. Aprende la receta original, la que hacen las mamás en Antioquia todos los días.",
+          "source_url": "https://www.youtube.com/watch?v=RPH8xdW8M1c",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/RPH8xdW8M1c/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/RPH8xdW8M1c/1.jpg",
+            "https://img.youtube.com/vi/RPH8xdW8M1c/2.jpg",
+            "https://img.youtube.com/vi/RPH8xdW8M1c/3.jpg"
+          ],
+          "position": 2,
+          "product": {
+            "name": "Frijoles Antioqueños – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 7,
+          "name": "Arepas de Chócolo con Queso",
+          "description": "La arepa de chócolo con queso derretido es la merienda más deliciosa de las tardes en Antioquia y el Eje Cafetero. Dulce, suave y esponjosa por dentro, doradita por fuera, con queso blanco costeño que se derrite y escurre por los lados. Aprende a hacer la masa perfecta con maíz tierno fresco, el punto de cocción en la plancha y por qué el queso que eliges lo cambia todo.",
+          "source_url": "https://www.youtube.com/watch?v=JLzbNGR8Sh4",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/JLzbNGR8Sh4/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/JLzbNGR8Sh4/1.jpg",
+            "https://img.youtube.com/vi/JLzbNGR8Sh4/2.jpg",
+            "https://img.youtube.com/vi/JLzbNGR8Sh4/3.jpg"
+          ],
+          "position": 3,
+          "product": {
+            "name": "Arepas de Chócolo – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 8,
+          "name": "Mondongo Antioqueño",
+          "description": "Un adelanto gratuito de la cocina paisa. El mondongo antioqueño es una sopa de callos de res cocinados con papa, arveja, zanahoria, cebolla y especias hasta quedar tiernos y sabrosos. Plato de los sábados, de los que se sirven en las fondas de El Poblado y los mercados de Medellín. ¡Mira el video gratis y luego accede a todas nuestras recetas completas!",
+          "source_url": "https://www.youtube.com/watch?v=j5ELgTVJxEM",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/j5ELgTVJxEM/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/j5ELgTVJxEM/1.jpg",
+            "https://img.youtube.com/vi/j5ELgTVJxEM/2.jpg",
+            "https://img.youtube.com/vi/j5ELgTVJxEM/3.jpg"
+          ],
+          "position": 4,
+          "product": {
+            "name": "Mondongo Antioqueño – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 3,
+      "slug": "sabores-del-pacifico",
+      "name": "Sabores del Pacífico y Valle del Cauca",
+      "bio": "La cocina afrocolombiana del Pacífico y el sabor caleño del Valle: encocado de mariscos con leche de coco, tapao de pescado al estilo del Chocó, sancocho valluno de gallina a la leña y la refrescante lulada caleña para el calor. Sabores únicos que no encontrarás en ningún otro lugar del mundo.",
+      "category_slug": "gastronomia",
+      "nsfw": false,
+      "social_links": {
+        "youtube": "https://www.youtube.com/@YoSoyColombia"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "ref": 9,
+          "name": "Encocado de Mariscos del Pacífico",
+          "description": "El encocado es el plato más representativo de la cocina afrocolombiana del Pacífico. Camarones, calamares y mejillones cocinados en una salsa espesa de leche de coco con hogao, comino, chillangua y orégano orejón: hierbas aromáticas que solo crecen en esa región. El resultado es un plato intenso, cremoso y profundamente colombiano que se sirve con arroz con coco y patacones.",
+          "source_url": "https://www.youtube.com/watch?v=jRZr0pwUBRU",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/jRZr0pwUBRU/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/jRZr0pwUBRU/1.jpg",
+            "https://img.youtube.com/vi/jRZr0pwUBRU/2.jpg",
+            "https://img.youtube.com/vi/jRZr0pwUBRU/3.jpg"
+          ],
+          "position": 1,
+          "product": {
+            "name": "Encocado de Mariscos – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 10,
+          "name": "Sancocho Valluno de Gallina",
+          "description": "El sancocho de gallina valluno es el plato de los domingos en Cali y todo el Valle del Cauca. Gallina criolla cocinada lentamente con papa criolla, yuca, plátano verde, mazorca y bastante cilantro hasta que el caldo queda espeso y brillante. La diferencia con otros sancochos está en la gallina criolla: ese sabor profundo que no tiene el pollo de supermercado. Se sirve con arroz, aguacate y ají.",
+          "source_url": "https://www.youtube.com/watch?v=IwWqo58_4o8",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/IwWqo58_4o8/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/IwWqo58_4o8/1.jpg",
+            "https://img.youtube.com/vi/IwWqo58_4o8/2.jpg",
+            "https://img.youtube.com/vi/IwWqo58_4o8/3.jpg"
+          ],
+          "position": 2,
+          "product": {
+            "name": "Sancocho Valluno – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 11,
+          "name": "Tapao de Pescado del Pacífico",
+          "description": "El tapao es el plato ancestral del Pacífico colombiano: pescado entero cocinado tapado con plátano verde, leche de coco, ají chombo y hierbas del monte en una sola olla a fuego lento. Una receta que viene de las comunidades del Chocó y Buenaventura y que se ha transmitido de generación en generación. Aprende a prepararlo respetando la técnica tradicional que lo hace tan especial.",
+          "source_url": "https://www.youtube.com/watch?v=3CeiXTYG5Ko",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/3CeiXTYG5Ko/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/3CeiXTYG5Ko/1.jpg",
+            "https://img.youtube.com/vi/3CeiXTYG5Ko/2.jpg",
+            "https://img.youtube.com/vi/3CeiXTYG5Ko/3.jpg"
+          ],
+          "position": 3,
+          "product": {
+            "name": "Tapao de Pescado – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 12,
+          "name": "Lulada Caleña",
+          "description": "Un regalo gratis para empezar: la lulada es la bebida más caleña que existe. Lulo aplastado con agua, azúcar y limón: así de simple, así de refrescante, así de deliciosa. Imposible tomar una y parar. En este video te mostramos cómo prepararla tal como la venden en los puestos de la Galería Alameda en Cali. ¡Gratis, para que te enamores del sabor del Valle!",
+          "source_url": "https://www.youtube.com/watch?v=XSZeN1z5X2Q",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/XSZeN1z5X2Q/hqdefault.jpg",
+          "preview_image_urls": [
+            "https://img.youtube.com/vi/XSZeN1z5X2Q/1.jpg",
+            "https://img.youtube.com/vi/XSZeN1z5X2Q/2.jpg",
+            "https://img.youtube.com/vi/XSZeN1z5X2Q/3.jpg"
+          ],
+          "position": 4,
+          "product": {
+            "name": "Lulada Caleña – Receta Completa",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 4,
+      "slug": "bitcoin-academy",
+      "name": "Bitcoin Academy",
+      "bio": "From first principles to protocol-level engineering. A curated path through the best Bitcoin and Lightning Network content ever produced — 3Blue1Brown animations, Andreas Antonopoulos talks, and MIT lectures. One channel, zero fluff.",
+      "category_slug": "bitcoin-education",
+      "nsfw": false,
+      "social_links": {
+        "youtube": "https://www.youtube.com/@aantonop",
+        "twitter": "https://x.com/aantonop"
+      },
+      "profile_image_url": "https://img.youtube.com/vi/bBC-nXj3Ng4/hqdefault.jpg",
+      "active": true,
+      "media": [
+        {
+          "ref": 13,
+          "name": "But How Does Bitcoin Actually Work?",
+          "description": "3Blue1Brown's legendary explainer. Uses beautiful animations to walk through the math and cryptography behind Bitcoin from first principles. The single best introduction to how the protocol works. 16M+ views.",
+          "source_url": "https://www.youtube.com/watch?v=bBC-nXj3Ng4",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/bBC-nXj3Ng4/hqdefault.jpg",
+          "preview_image_urls": [],
+          "position": 1,
+          "product": {
+            "name": "But How Does Bitcoin Actually Work?",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 14,
+          "name": "Introduction to Bitcoin — Andreas Antonopoulos",
+          "description": "Andreas Antonopoulos delivers his most popular talk ever at Singularity University. An unscripted, passionate introduction covering economics, psychology, and game theory behind Bitcoin.",
+          "source_url": "https://www.youtube.com/watch?v=l1si5ZWLgy0",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/l1si5ZWLgy0/hqdefault.jpg",
+          "preview_image_urls": [],
+          "position": 2,
+          "product": {
+            "name": "Introduction to Bitcoin",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 15,
+          "name": "Money as a System of Control",
+          "description": "Andreas Antonopoulos examines the three functions of money and reveals a hidden fourth: control. A powerful talk on why decentralized money is a human rights issue, not just a technology experiment.",
+          "source_url": "https://www.youtube.com/watch?v=FyK4P7ZdOK8",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/FyK4P7ZdOK8/hqdefault.jpg",
+          "preview_image_urls": [],
+          "position": 3,
+          "product": {
+            "name": "Money as a System of Control",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 16,
+          "name": "Bitcoin, Lightning, and Streaming Money",
+          "description": "Andreas explores how the Lightning Network enables a future where money flows like data packets — streaming micropayments in real time. The talk that inspired a generation of Lightning developers.",
+          "source_url": "https://www.youtube.com/watch?v=gF_ZQ_eijPs",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/gF_ZQ_eijPs/hqdefault.jpg",
+          "preview_image_urls": [],
+          "position": 4,
+          "product": {
+            "name": "Bitcoin, Lightning, and Streaming Money",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 17,
+          "name": "MIT: Signatures, Hashing, Hash Chains, e-Cash",
+          "description": "First lecture from MIT's MAS.S62 Cryptocurrency Engineering and Design course. Covers the cryptographic building blocks that make Bitcoin possible: digital signatures, hash functions, and e-cash predecessors. University-level depth.",
+          "source_url": "https://www.youtube.com/watch?v=IJquEYhiq_U",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/IJquEYhiq_U/hqdefault.jpg",
+          "preview_image_urls": [],
+          "position": 5,
+          "product": {
+            "name": "MIT Crypto Lecture — Signatures & Hashing",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 5,
+      "slug": "urban-geometries",
+      "name": "Urban Geometries",
+      "bio": "Architectural photography from cities around the world. Clean lines, bold structures, and the hidden patterns of urban spaces. High-resolution photo sets you can study, print, and enjoy.",
+      "category_slug": "photography",
+      "nsfw": false,
+      "social_links": {
+        "instagram": "https://www.instagram.com/unsplash",
+        "website": "https://unsplash.com"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "product": {
+        "name": "Urban Geometries Channel",
+        "price_cents": 1,
+        "currency": "usd",
+        "access_duration_seconds": 2592000
+      },
+      "media": [
+        {
+          "ref": 18,
+          "name": "Tokyo Structures",
+          "description": "Concrete and glass rising through neon haze. Tokyo's architectural language is a conversation between tradition and futurism — ancient temple geometry echoed in skyscraper facades. This set captures Shibuya's crossing towers, Roppongi's angular art museums, and the quiet brutalism of residential Meguro.",
+          "source_url": "https://picsum.photos/seed/tokyo-main/1920/1080",
+          "media_type": "photo_set",
+          "thumbnail_url": "https://picsum.photos/seed/tokyo-thumb/640/360",
+          "preview_image_urls": [
+            "https://picsum.photos/seed/tokyo-1/1920/1080",
+            "https://picsum.photos/seed/tokyo-2/1920/1080",
+            "https://picsum.photos/seed/tokyo-3/1920/1080",
+            "https://picsum.photos/seed/tokyo-4/1920/1080",
+            "https://picsum.photos/seed/tokyo-5/1920/1080",
+            "https://picsum.photos/seed/tokyo-6/1920/1080"
+          ],
+          "position": 1,
+          "product": {
+            "name": "Tokyo Structures – Photo Set",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 19,
+          "name": "Berlin in Concrete",
+          "description": "Berlin wears its history in its buildings. Soviet-era Plattenbauten next to glass-and-steel startups, brutalist university halls beside restored Gründerzeit apartments. This set explores the raw textures of Kreuzberg, the stark symmetry of Karl-Marx-Allee, and the reflections of Potsdamer Platz.",
+          "source_url": "https://picsum.photos/seed/berlin-main/1920/1080",
+          "media_type": "photo_set",
+          "thumbnail_url": "https://picsum.photos/seed/berlin-thumb/640/360",
+          "preview_image_urls": [
+            "https://picsum.photos/seed/berlin-1/1920/1080",
+            "https://picsum.photos/seed/berlin-2/1920/1080",
+            "https://picsum.photos/seed/berlin-3/1920/1080",
+            "https://picsum.photos/seed/berlin-4/1920/1080",
+            "https://picsum.photos/seed/berlin-5/1920/1080",
+            "https://picsum.photos/seed/berlin-6/1920/1080"
+          ],
+          "position": 2,
+          "product": {
+            "name": "Berlin in Concrete – Photo Set",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 20,
+          "name": "New York Lines",
+          "description": "Manhattan is a grid that breaks its own rules. Fire escapes casting shadow patterns on brick, the Oculus reaching skyward like ribs, One World Trade reflecting clouds. This set follows the vertical lines of Midtown and the horizontal sprawl of the Brooklyn waterfront.",
+          "source_url": "https://picsum.photos/seed/nyc-main/1920/1080",
+          "media_type": "photo_set",
+          "thumbnail_url": "https://picsum.photos/seed/nyc-thumb/640/360",
+          "preview_image_urls": [
+            "https://picsum.photos/seed/nyc-1/1920/1080",
+            "https://picsum.photos/seed/nyc-2/1920/1080",
+            "https://picsum.photos/seed/nyc-3/1920/1080",
+            "https://picsum.photos/seed/nyc-4/1920/1080",
+            "https://picsum.photos/seed/nyc-5/1920/1080",
+            "https://picsum.photos/seed/nyc-6/1920/1080"
+          ],
+          "position": 3,
+          "product": {
+            "name": "New York Lines – Photo Set",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 21,
+          "name": "Barcelona Curves",
+          "description": "Where Gaudí's organic forms meet the Eixample's perfect grid. Barcelona is a city that bends straight lines into waves — from the mosaic-covered chimneys of Casa Batlló to the sweeping arches of the Mercat de Sant Josep. This set captures the tension between order and imagination.",
+          "source_url": "https://picsum.photos/seed/barcelona-main/1920/1080",
+          "media_type": "photo_set",
+          "thumbnail_url": "https://picsum.photos/seed/barcelona-thumb/640/360",
+          "preview_image_urls": [
+            "https://picsum.photos/seed/barcelona-1/1920/1080",
+            "https://picsum.photos/seed/barcelona-2/1920/1080",
+            "https://picsum.photos/seed/barcelona-3/1920/1080",
+            "https://picsum.photos/seed/barcelona-4/1920/1080",
+            "https://picsum.photos/seed/barcelona-5/1920/1080",
+            "https://picsum.photos/seed/barcelona-6/1920/1080"
+          ],
+          "position": 4,
+          "product": {
+            "name": "Barcelona Curves – Photo Set",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 6,
+      "slug": "indie-cinema",
+      "name": "Indie Cinema",
+      "bio": "Independent short films and visual experiments from around the world. Curated cinema you won't find on mainstream streaming platforms — hosted on Vimeo and Dailymotion, proving PrivaPaid works with any video platform.",
+      "category_slug": "independent-film",
+      "nsfw": false,
+      "social_links": {
+        "website": "https://vimeo.com"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "ref": 22,
+          "name": "The Reward — Tales of Alethrion",
+          "description": "An award-winning animated short by The Animation Workshop. Two unlikely heroes embark on a quest for a legendary treasure, discovering that the real reward was the journey itself. Beautifully hand-drawn animation with a sweeping orchestral score. Hosted on Vimeo.",
+          "source_url": "https://vimeo.com/58179094",
+          "media_type": "video",
+          "thumbnail_url": "https://picsum.photos/seed/reward-alethrion/640/360",
+          "preview_image_urls": [],
+          "position": 1,
+          "product": {
+            "name": "The Reward — Animated Short",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 23,
+          "name": "Wanderers — A Vision of Humanity's Future",
+          "description": "Erik Wernquist's stunning short film visualizing humanity's expansion into the solar system. Real locations in our solar system rendered with scientific accuracy, narrated by Carl Sagan. A film that makes you believe in the future. Hosted on Vimeo.",
+          "source_url": "https://vimeo.com/108650530",
+          "media_type": "video",
+          "thumbnail_url": "https://picsum.photos/seed/wanderers-space/640/360",
+          "preview_image_urls": [],
+          "position": 2,
+          "product": {
+            "name": "Wanderers — Sci-Fi Short",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 24,
+          "name": "Nature by Numbers — Cristóbal Vila",
+          "description": "A mesmerizing exploration of the mathematical patterns found in nature. The Fibonacci sequence, the golden ratio, and Voronoi tessellations brought to life through elegant 3D animation. Originally a Vimeo Staff Pick with millions of views. Hosted on Dailymotion.",
+          "source_url": "https://www.dailymotion.com/video/x2cn987",
+          "media_type": "video",
+          "thumbnail_url": "https://picsum.photos/seed/nature-numbers/640/360",
+          "preview_image_urls": [],
+          "position": 3,
+          "product": {
+            "name": "Nature by Numbers — Animation",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 25,
+          "name": "Pixels — Patrick Jean",
+          "description": "Classic arcade game characters invade New York City in this viral short film by Patrick Jean. Pac-Man, Tetris, Space Invaders, and Donkey Kong wreak havoc on Manhattan in stunning visual effects. The short that inspired a generation of pixel art. Hosted on Dailymotion.",
+          "source_url": "https://www.dailymotion.com/video/xcx9j7",
+          "media_type": "video",
+          "thumbnail_url": "https://picsum.photos/seed/pixels-retro/640/360",
+          "preview_image_urls": [],
+          "position": 4,
+          "product": {
+            "name": "Pixels — VFX Short Film",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 7,
+      "slug": "ambient-transmissions",
+      "name": "Ambient Transmissions",
+      "bio": "Long-form ambient and electronic music for focus, relaxation, and deep work. Original compositions released under Creative Commons. Put on your headphones and disappear.",
+      "category_slug": "music-podcasts",
+      "nsfw": false,
+      "social_links": {
+        "website": "https://freemusicarchive.org"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "ref": 26,
+          "name": "Deep Focus Session",
+          "description": "A 4-minute ambient composition designed for sustained concentration. Layered synth pads, subtle harmonic shifts, and no sudden changes — just a steady sonic environment for getting work done. Perfect for coding, writing, or studying.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+          "media_type": "audio",
+          "thumbnail_url": "https://picsum.photos/seed/ambient-focus/640/360",
+          "preview_image_urls": [],
+          "position": 1,
+          "product": {
+            "name": "Deep Focus Session",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 27,
+          "name": "Evening Drift",
+          "description": "Warm analog textures and slow-moving harmonies for winding down. This track was composed during a late-night session in Berlin, inspired by the glow of streetlights through rain. Let it carry you.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+          "media_type": "audio",
+          "thumbnail_url": "https://picsum.photos/seed/ambient-evening/640/360",
+          "preview_image_urls": [],
+          "position": 2,
+          "product": {
+            "name": "Evening Drift",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 28,
+          "name": "Static Landscapes",
+          "description": "Field recordings layered with granular synthesis. The sound of wind through power lines, distant trains, and shortwave radio static transformed into a meditative soundscape. For listeners who find beauty in noise.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+          "media_type": "audio",
+          "thumbnail_url": "https://picsum.photos/seed/ambient-static/640/360",
+          "preview_image_urls": [],
+          "position": 3,
+          "product": {
+            "name": "Static Landscapes",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 29,
+          "name": "Terminal Velocity",
+          "description": "The most kinetic track in the catalog. Pulsing arpeggios, rhythmic modular sequences, and a slow build that rewards patience. Ambient for people who usually listen to techno. Best experienced with good headphones at moderate volume.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+          "media_type": "audio",
+          "thumbnail_url": "https://picsum.photos/seed/ambient-terminal/640/360",
+          "preview_image_urls": [],
+          "position": 4,
+          "product": {
+            "name": "Terminal Velocity",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 8,
+      "slug": "the-dev-podcast",
+      "name": "The Dev Podcast",
+      "bio": "Weekly conversations with developers, maintainers, and tech founders about the tools and ideas shaping the industry. Premium episodes with extended interviews and no ads. Subscribe for the full back catalog.",
+      "category_slug": "music-podcasts",
+      "nsfw": false,
+      "social_links": {
+        "twitter": "https://x.com/github",
+        "website": "https://github.com/blog"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "ref": 30,
+          "name": "Ep. 1: Why Developers Build Open Source",
+          "description": "Our pilot episode digs into the motivations behind open-source contributions. Is it altruism, career strategy, or something deeper? We talk to three maintainers about what keeps them pushing commits at 2 AM with no paycheck attached.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+          "media_type": "podcast",
+          "thumbnail_url": "https://picsum.photos/seed/podcast-ep1/640/360",
+          "preview_image_urls": [],
+          "position": 1,
+          "product": {
+            "name": "Ep. 1: Why Developers Build Open Source",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 31,
+          "name": "Ep. 2: The Economics of Free Software",
+          "description": "If the software is free, where does the money come from? We explore the business models that sustain open-source projects — from sponsorships and dual licensing to SaaS wrappers and consulting. Some work. Many don't.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+          "media_type": "podcast",
+          "thumbnail_url": "https://picsum.photos/seed/podcast-ep2/640/360",
+          "preview_image_urls": [],
+          "position": 2,
+          "product": {
+            "name": "Ep. 2: The Economics of Free Software",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 32,
+          "name": "Ep. 3: Lightning Payments and the Creator Economy",
+          "description": "How Bitcoin's Lightning Network is enabling a new kind of creator economy — one where a penny is a viable price point and creators don't need a platform's permission to get paid. We demo live micropayments on air.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+          "media_type": "podcast",
+          "thumbnail_url": "https://picsum.photos/seed/podcast-ep3/640/360",
+          "preview_image_urls": [],
+          "position": 3,
+          "product": {
+            "name": "Ep. 3: Lightning Payments and the Creator Economy",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 33,
+          "name": "Ep. 4: Privacy as a Feature, Not an Afterthought",
+          "description": "End-to-end encryption, zero-knowledge proofs, and why 'we don't collect data' is the new competitive advantage. We talk to engineers building privacy-first products about the technical and business tradeoffs.",
+          "source_url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+          "media_type": "podcast",
+          "thumbnail_url": "https://picsum.photos/seed/podcast-ep4/640/360",
+          "preview_image_urls": [],
+          "position": 4,
+          "product": {
+            "name": "Ep. 4: Privacy as a Feature",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 9,
+      "slug": "research-papers",
+      "name": "Research Papers & Whitepapers",
+      "bio": "Foundational documents that shaped technology and the internet. The primary sources every developer should read at least once — from Satoshi's whitepaper to the cypherpunk manifestos. Original PDFs, no summaries.",
+      "category_slug": "written-word",
+      "nsfw": false,
+      "social_links": {
+        "website": "https://bitcoin.org"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "ref": 34,
+          "name": "Bitcoin: A Peer-to-Peer Electronic Cash System",
+          "description": "The document that started it all. Satoshi Nakamoto's 2008 whitepaper describing a decentralized electronic cash system that requires no trusted third party. Nine pages that changed the world. Every developer working in crypto should read the original at least once.",
+          "source_url": "https://bitcoin.org/bitcoin.pdf",
+          "media_type": "article",
+          "thumbnail_url": "https://picsum.photos/seed/bitcoin-whitepaper/640/360",
+          "preview_image_urls": [],
+          "position": 1,
+          "product": {
+            "name": "Bitcoin Whitepaper — Satoshi Nakamoto",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 35,
+          "name": "The Lightning Network Technical Summary",
+          "description": "Joseph Poon and Thaddeus Dryja's paper describing a network of payment channels on top of Bitcoin that enables instant, high-volume micropayments. The technical foundation behind the technology that powers PrivaPaid's $0.01 transactions.",
+          "source_url": "https://lightning.network/lightning-network-summary.pdf",
+          "media_type": "article",
+          "thumbnail_url": "https://picsum.photos/seed/lightning-paper/640/360",
+          "preview_image_urls": [],
+          "position": 2,
+          "product": {
+            "name": "Lightning Network Summary — Poon & Dryja",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 36,
+          "name": "Bitcoin: A Peer-to-Peer Electronic Cash System (Annotated)",
+          "description": "Fermat Library's annotated version of Satoshi's whitepaper, with inline explanations of every technical concept, formula, and design decision. The version you read when you want to actually understand every sentence, not just skim it.",
+          "source_url": "https://fermatslibrary.com/s/bitcoin",
+          "media_type": "article",
+          "thumbnail_url": "https://picsum.photos/seed/annotated-btc/640/360",
+          "preview_image_urls": [],
+          "position": 3,
+          "product": {
+            "name": "Annotated Bitcoin Whitepaper",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 37,
+          "name": "Hashcash — A Denial of Service Counter-Measure",
+          "description": "Adam Back's 2002 paper on Hashcash, the proof-of-work system that directly inspired Bitcoin's mining algorithm. Understanding Hashcash is understanding the genealogy of Bitcoin. One of the most cited papers in cryptocurrency history.",
+          "source_url": "http://www.hashcash.org/papers/hashcash.pdf",
+          "media_type": "article",
+          "thumbnail_url": "https://picsum.photos/seed/hashcash-paper/640/360",
+          "preview_image_urls": [],
+          "position": 4,
+          "product": {
+            "name": "Hashcash — Adam Back",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    },
+    {
+      "ref": 10,
+      "slug": "platform-showcase",
+      "name": "Platform Showcase",
+      "bio": "PrivaPaid works with any video platform. This channel demonstrates live integrations with YouTube Shorts, Bunny Stream, Cloudflare Stream, Mux, and direct file hosting. Same encrypted paywall, same $0.01 unlock — no matter where your video lives.",
+      "category_slug": "streaming-platforms",
+      "nsfw": false,
+      "social_links": {
+        "website": "https://privapaid.com",
+        "twitter": "https://x.com/saboressatsrail"
+      },
+      "profile_image_url": "",
+      "active": true,
+      "media": [
+        {
+          "ref": 38,
+          "name": "YouTube Shorts Integration",
+          "description": "A vertical-format YouTube Short embedded through PrivaPaid's encrypted paywall. Demonstrates that even short-form vertical video works seamlessly with the platform's encryption and embed detection. The same $0.01 unlock works for a 15-second Short or a 3-hour lecture.",
+          "source_url": "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+          "media_type": "video",
+          "thumbnail_url": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+          "preview_image_urls": [],
+          "position": 1,
+          "product": {
+            "name": "YouTube Shorts Integration",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 39,
+          "name": "Bunny Stream — Professional CDN",
+          "description": "Video delivered via Bunny.net's global CDN with adaptive bitrate streaming. Bunny Stream is popular with indie creators for its low cost and fast global delivery. This demonstrates PrivaPaid's iframe embed detection for mediadelivery.net URLs.",
+          "source_url": "https://iframe.mediadelivery.net/embed/197133/dc48a09e-d9bb-420a-83d7-72dc2304c034",
+          "media_type": "video",
+          "thumbnail_url": "https://picsum.photos/seed/bunny-cdn/640/360",
+          "preview_image_urls": [],
+          "position": 2,
+          "product": {
+            "name": "Bunny Stream — CDN Demo",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 40,
+          "name": "Cloudflare Stream — Edge Delivery",
+          "description": "Video served from Cloudflare's global edge network. Cloudflare Stream provides encoding, storage, and delivery with a simple embed URL. This demonstrates PrivaPaid's support for cloudflarestream.com customer subdomains.",
+          "source_url": "https://customer-f33zs165nr7gyfy4.cloudflarestream.com/6b9e68b07dfee8cc2d116e4c51d6a957/iframe",
+          "media_type": "video",
+          "thumbnail_url": "https://picsum.photos/seed/cloudflare-edge/640/360",
+          "preview_image_urls": [],
+          "position": 3,
+          "product": {
+            "name": "Cloudflare Stream — Edge Demo",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        },
+        {
+          "ref": 41,
+          "name": "Mux — Adaptive HLS Streaming",
+          "description": "HLS adaptive bitrate stream via Mux, the video API used by companies like Vimeo and Frame.io. The player automatically adjusts quality based on bandwidth. This demonstrates PrivaPaid's support for .m3u8 manifest URLs and stream.mux.com domains.",
+          "source_url": "https://stream.mux.com/VZtzUzGRv02OhRnZCxcNg49OilvolTqdnFLEqBsTwaxH.m3u8",
+          "media_type": "video",
+          "thumbnail_url": "https://picsum.photos/seed/mux-hls/640/360",
+          "preview_image_urls": [],
+          "position": 4,
+          "product": {
+            "name": "Mux — HLS Demo",
+            "price_cents": 1,
+            "currency": "USD",
+            "access_duration_seconds": 604800
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -277,6 +277,7 @@ export const schemas = {
     price_cents: z.number().int().positive(),
     currency: z.string().max(10).optional(),
     access_duration_seconds: z.number().int().nonnegative().optional(),
+    external_ref: z.string().min(1).max(100).optional(),
   }),
 
   // Import: media item
@@ -325,6 +326,7 @@ export const schemas = {
               price_cents: z.number().int().positive(),
               currency: z.string().max(10).optional(),
               access_duration_seconds: z.number().int().nonnegative().optional(),
+              external_ref: z.string().min(1).max(100).optional(),
             })
             .optional(),
         })
@@ -363,6 +365,7 @@ export const schemas = {
               price_cents: z.number().int().positive(),
               currency: z.string().max(10).optional(),
               access_duration_seconds: z.number().int().nonnegative().optional(),
+              external_ref: z.string().min(1).max(100).optional(),
             })
             .optional(),
           media: z
@@ -385,6 +388,7 @@ export const schemas = {
                     price_cents: z.number().int().positive(),
                     currency: z.string().max(10).optional(),
                     access_duration_seconds: z.number().int().nonnegative().optional(),
+                    external_ref: z.string().min(1).max(100).optional(),
                   })
                   .optional(),
               })

@@ -225,6 +225,7 @@ export async function createEncryptedMediaProduct(
     product_price_cents: productData.price_cents,
     product_currency: productData.currency,
     product_access_duration_seconds: productData.access_duration_seconds,
+    product_external_ref: productData.external_ref,
     product_status: "active",
     synced_at: new Date(),
   };
@@ -287,7 +288,7 @@ export async function updateExistingProduct(
   mData: ImportMediaWithProduct,
   sourceUrlChanged: boolean,
   channelDoc: { satsrail_product_type_id: string | null },
-  mediaRef: number,
+  externalRef: string,
   api: ApiThrottle,
   onStatus?: StatusFn
 ): Promise<void> {
@@ -299,12 +300,19 @@ export async function updateExistingProduct(
     access_duration_seconds: mData.product.access_duration_seconds,
   }));
 
-  if (!sourceUrlChanged) return;
+  if (!sourceUrlChanged) {
+    // Even when source URL didn't change, refresh cached external_ref so future
+    // exports carry the canonical value rather than the formula fallback.
+    await MediaProduct.findByIdAndUpdate(existingProduct._id, {
+      product_external_ref: externalRef,
+    });
+    return;
+  }
 
   const keyResult = await getProductKeySafe(sk, existingProduct.satsrail_product_id, {
     name: mData.product.name, price_cents: mData.product.price_cents,
     currency: mData.product.currency, access_duration_seconds: mData.product.access_duration_seconds,
-    product_type_id: channelDoc.satsrail_product_type_id || undefined, external_ref: `md_${mediaRef}`,
+    product_type_id: channelDoc.satsrail_product_type_id || undefined, external_ref: externalRef,
   }, api, onStatus);
 
   await onStatus?.("Re-encrypting content...");
@@ -317,6 +325,7 @@ export async function updateExistingProduct(
     product_price_cents: mData.product.price_cents,
     product_currency: mData.product.currency,
     product_access_duration_seconds: mData.product.access_duration_seconds,
+    product_external_ref: externalRef,
     synced_at: new Date(),
   });
 }
@@ -333,10 +342,11 @@ export async function handleExistingMediaProduct(
   onStatus?: StatusFn
 ): Promise<void> {
   const existingProduct = await MediaProduct.findOne({ media_id: String(existingMedia._id) });
+  const externalRef = mData.product.external_ref || `md_${existingMedia.ref}`;
 
   if (existingProduct) {
     try {
-      await updateExistingProduct(sk, existingProduct, mData, sourceUrlChanged, channelDoc, existingMedia.ref, api, onStatus);
+      await updateExistingProduct(sk, existingProduct, mData, sourceUrlChanged, channelDoc, externalRef, api, onStatus);
     } catch (err) {
       errors.push({ entity: "media_product", name: mData.name, error: `Product update failed: ${errorMsg(err)}` });
     }
@@ -349,7 +359,7 @@ export async function handleExistingMediaProduct(
     await createEncryptedMediaProduct(sk, {
       name: mData.product.name, price_cents: mData.product.price_cents,
       currency: mData.product.currency, access_duration_seconds: mData.product.access_duration_seconds,
-      product_type_id: channelDoc.satsrail_product_type_id, external_ref: `md_${existingMedia.ref}`,
+      product_type_id: channelDoc.satsrail_product_type_id, external_ref: externalRef,
     }, String(existingMedia._id), mData.source_url, api, onStatus);
   } catch (err) {
     errors.push({ entity: "media_product", name: mData.name, error: `Product creation failed: ${errorMsg(err)}` });
@@ -421,7 +431,8 @@ export async function createNewMedia(
       await createEncryptedMediaProduct(sk, {
         name: mData.product.name, price_cents: mData.product.price_cents,
         currency: mData.product.currency, access_duration_seconds: mData.product.access_duration_seconds,
-        product_type_id: channelDoc.satsrail_product_type_id, external_ref: `md_${ref}`,
+        product_type_id: channelDoc.satsrail_product_type_id,
+        external_ref: mData.product.external_ref || `md_${ref}`,
       }, String(media._id), mData.source_url, api, onStatus);
     } catch (err) {
       errors.push({ entity: "media_product", name: mData.name, error: `Product creation failed: ${errorMsg(err)}` });
@@ -479,6 +490,7 @@ export async function createEncryptedChannelProduct(
       product_price_cents: productData.price_cents,
       product_currency: productData.currency,
       product_access_duration_seconds: productData.access_duration_seconds,
+      product_external_ref: productData.external_ref,
       product_status: "active",
       synced_at: new Date(),
     });
@@ -507,6 +519,7 @@ export async function createEncryptedChannelProduct(
     product_price_cents: productData.price_cents,
     product_currency: productData.currency,
     product_access_duration_seconds: productData.access_duration_seconds,
+    product_external_ref: productData.external_ref,
     product_status: "active",
     synced_at: new Date(),
   });

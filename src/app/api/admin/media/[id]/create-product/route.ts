@@ -95,6 +95,7 @@ export async function POST(
       product_access_duration_seconds: product.access_duration_seconds,
       product_status: product.status,
       product_slug: product.slug,
+      product_external_ref: product.external_ref ?? `md_${media.ref}`,
       synced_at: new Date(),
     });
 

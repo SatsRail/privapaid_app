@@ -297,6 +297,46 @@ describe("POST /api/admin/channels/[id]/import", () => {
     expect(mediaProducts[0].key_fingerprint).toBe("fp_123");
   });
 
+  it("honors JSON product.external_ref when creating a SatsRail product", async () => {
+    mockAuth.mockResolvedValue({
+      user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },
+    });
+
+    const productKey = generateProductKey();
+    const channel = await createChannel({
+      slug: "ext-ref-ch",
+      name: "Ext Ref",
+      satsrail_product_type_id: "pt_x",
+    });
+
+    mockCreateProduct.mockResolvedValue({ id: "prod_ext" });
+    mockGetProductKey.mockResolvedValue({ key: productKey, key_fingerprint: "fp_ext" });
+
+    const [req, ctx] = channelImportRequest(String(channel._id), {
+      version: "1.0",
+      media: [
+        {
+          name: "Custom Ref Video",
+          source_url: "https://example.com/x.mp4",
+          product: {
+            name: "Custom",
+            price_cents: 200,
+            external_ref: "md_special_42",
+          },
+        },
+      ],
+    });
+    const res = await POST(req, ctx);
+    await readSSEResult(res);
+
+    expect(mockCreateProduct).toHaveBeenCalledWith(
+      "sk_live_test_key",
+      expect.objectContaining({ external_ref: "md_special_42" })
+    );
+    const mp = await MediaProduct.findOne().lean();
+    expect(mp!.product_external_ref).toBe("md_special_42");
+  });
+
   it("creates product type for channel without one when importing media with products", async () => {
     mockAuth.mockResolvedValue({
       user: { id: "admin-1", email: "admin@test.com", type: "admin", role: "owner" },

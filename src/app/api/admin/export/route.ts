@@ -97,6 +97,7 @@ export async function GET() {
                 price_cents: cp.product_price_cents ?? 0,
                 currency: cp.product_currency || "USD",
                 access_duration_seconds: cp.product_access_duration_seconds,
+                external_ref: cp.product_external_ref || (ch.ref != null ? `ch_${ch.ref}` : undefined),
               },
             }
           : {}),
@@ -119,6 +120,7 @@ export async function GET() {
                     price_cents: mp.product_price_cents ?? 0,
                     currency: mp.product_currency || "USD",
                     access_duration_seconds: mp.product_access_duration_seconds,
+                    external_ref: mp.product_external_ref || (m.ref != null ? `md_${m.ref}` : undefined),
                   },
                 }
               : {}),

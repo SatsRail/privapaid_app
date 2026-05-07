@@ -12,6 +12,7 @@ export interface IMediaProduct extends Document {
   product_access_duration_seconds?: number;
   product_status?: string;
   product_slug?: string;
+  product_external_ref?: string;
   synced_at?: Date;
   created_at: Date;
   updated_at: Date;
@@ -43,6 +44,7 @@ const MediaProductSchema = new Schema<IMediaProduct>(
     product_access_duration_seconds: { type: Number },
     product_status: { type: String, default: "active" },
     product_slug: { type: String },
+    product_external_ref: { type: String },
     synced_at: { type: Date },
   },
   {
