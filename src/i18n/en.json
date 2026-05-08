@@ -79,6 +79,12 @@
   "admin.channels.add_media": "Add Media",
   "admin.media.delete_confirm": "Delete media \"{name}\"? This cannot be undone.",
   "admin.media.delete_failed": "Failed to delete media",
+  "admin.channels.delete": "Delete channel",
+  "admin.channels.delete_title": "Delete channel?",
+  "admin.channels.delete_confirm": "This will permanently delete \"{name}\" and all {count} media items underneath it. Linked products will be archived on SatsRail. This cannot be undone.",
+  "admin.channels.delete_confirm_no_media": "This will permanently delete \"{name}\". This cannot be undone.",
+  "admin.channels.delete_action": "Yes, delete",
+  "admin.channels.delete_failed": "Failed to delete channel",
   "admin.channels.type": "Type",
   "admin.channels.media_empty": "No media yet. Add your first item.",
 

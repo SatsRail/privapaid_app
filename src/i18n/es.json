@@ -79,6 +79,12 @@
   "admin.channels.add_media": "Agregar Contenido",
   "admin.media.delete_confirm": "¿Eliminar \"{name}\"? Esta acción no se puede deshacer.",
   "admin.media.delete_failed": "Error al eliminar el contenido",
+  "admin.channels.delete": "Eliminar canal",
+  "admin.channels.delete_title": "¿Eliminar canal?",
+  "admin.channels.delete_confirm": "Esto eliminará permanentemente \"{name}\" y los {count} contenidos asociados. Los productos vinculados serán archivados en SatsRail. Esta acción no se puede deshacer.",
+  "admin.channels.delete_confirm_no_media": "Esto eliminará permanentemente \"{name}\". Esta acción no se puede deshacer.",
+  "admin.channels.delete_action": "Sí, eliminar",
+  "admin.channels.delete_failed": "Error al eliminar el canal",
   "admin.channels.type": "Tipo",
   "admin.channels.media_empty": "No hay contenido. Agrega el primero.",
 

@@ -13,6 +13,7 @@ import { satsrail } from "@/lib/satsrail";
 import ChannelProductSection from "./ChannelProductSection";
 import ChannelImportSection from "./ChannelImportSection";
 import ChannelSamplerPreview from "./ChannelSamplerPreview";
+import DeleteChannelButton from "./DeleteChannelButton";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +127,11 @@ export default async function ChannelDetailPage({
           >
             {t(locale, "admin.channels.edit")}
           </Link>
+          <DeleteChannelButton
+            channelId={id}
+            name={channel.name}
+            mediaCount={media.length}
+          />
         </div>
       </div>
 
