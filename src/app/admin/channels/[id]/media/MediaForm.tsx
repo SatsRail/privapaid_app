@@ -477,7 +477,27 @@ export default function MediaForm({ channelId, channelSlug, initialData, currenc
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+      <form onSubmit={handleSubmit} className="max-w-4xl space-y-4">
+        {/* Media type controls which fields render below — pin it to the top
+            so it's the first thing the editor picks. */}
+        <Select
+          label="Media Type"
+          value={mediaType}
+          onChange={(e) => setMediaType(e.target.value)}
+          options={[
+            { value: "video", label: "Video" },
+            { value: "audio", label: "Audio" },
+            { value: "article", label: "Article" },
+            { value: "photo_set", label: "Photo Set" },
+            { value: "podcast", label: "Podcast" },
+          ]}
+        />
+
+        {/* Two-column body: text on the left, images on the right.
+            Stacks to a single column on mobile (<768px). */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Left column: identity + source */}
+          <div className="space-y-4">
         <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
         <div className="space-y-1">
           <label className="block text-sm font-medium text-[var(--theme-text)]">Description</label>
@@ -591,62 +611,56 @@ export default function MediaForm({ channelId, channelSlug, initialData, currenc
             type="url"
           />
         )}
-        <Select
-          label="Media Type"
-          value={mediaType}
-          onChange={(e) => setMediaType(e.target.value)}
-          options={[
-            { value: "video", label: "Video" },
-            { value: "audio", label: "Audio" },
-            { value: "article", label: "Article" },
-            { value: "photo_set", label: "Photo Set" },
-            { value: "podcast", label: "Podcast" },
-          ]}
-        />
-        <ImageUpload
-          context="media_thumbnail"
-          currentImageId={thumbnailId}
-          currentImageUrl={thumbnailUrl}
-          onUpload={(id) => setThumbnailId(id)}
-          label="Thumbnail"
-        />
+          </div>
 
-        {/* Preview Images */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-[var(--theme-text)]">
-            Preview Images
-            <span className="ml-1 font-normal text-[var(--theme-text-secondary)]">
-              ({previewImageIds.length}/6)
-            </span>
-          </label>
-          <p className="text-xs text-[var(--theme-text-secondary)]">
-            Static preview images visible to all viewers. Not encrypted.
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {previewImageIds.map((imgId, idx) => (
-              <div key={imgId} className="group relative aspect-square overflow-hidden rounded-lg border border-[var(--theme-border)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/images/${imgId}`}
-                  alt={`Preview ${idx + 1}`}
-                  className="h-full w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setPreviewImageIds((ids) => ids.filter((_, i) => i !== idx))}
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+          {/* Right column: visual assets */}
+          <div className="space-y-4">
+            <ImageUpload
+              context="media_thumbnail"
+              currentImageId={thumbnailId}
+              currentImageUrl={thumbnailUrl}
+              onUpload={(id) => setThumbnailId(id)}
+              label="Thumbnail"
+            />
+
+            {/* Preview Images */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-[var(--theme-text)]">
+                Preview Images
+                <span className="ml-1 font-normal text-[var(--theme-text-secondary)]">
+                  ({previewImageIds.length}/6)
+                </span>
+              </label>
+              <p className="text-xs text-[var(--theme-text-secondary)]">
+                Static preview images visible to all viewers. Not encrypted.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {previewImageIds.map((imgId, idx) => (
+                  <div key={imgId} className="group relative aspect-square overflow-hidden rounded-lg border border-[var(--theme-border)]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/images/${imgId}`}
+                      alt={`Preview ${idx + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImageIds((ids) => ids.filter((_, i) => i !== idx))}
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {previewImageIds.length < 6 && (
+                  <PreviewImageSlot
+                    onUpload={(id) => setPreviewImageIds((ids) => [...ids, id])}
+                  />
+                )}
               </div>
-            ))}
-            {previewImageIds.length < 6 && (
-              <PreviewImageSlot
-                onUpload={(id) => setPreviewImageIds((ids) => [...ids, id])}
-              />
-            )}
+            </div>
           </div>
         </div>
 
