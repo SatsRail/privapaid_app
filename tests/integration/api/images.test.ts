@@ -206,7 +206,11 @@ describe("Images API — POST /api/images", () => {
     const body = await res.json();
 
     expect(res.status).toBe(422);
-    expect(body.error).toBe("Unable to read image dimensions");
+    // The error includes the underlying sharp message so server logs and the
+    // client can both see what actually failed.
+    expect(body.error).toBe(
+      "Unable to read image dimensions: corrupt image"
+    );
   });
 
   it("uploads image and returns image_id on success", async () => {

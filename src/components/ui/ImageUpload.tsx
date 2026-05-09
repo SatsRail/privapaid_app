@@ -46,17 +46,37 @@ export default function ImageUpload({
         body: formData,
       });
 
-      const data = await res.json();
+      // The server may return a non-JSON body for unhandled exceptions
+      // (Next's default 500 page is HTML). Parse defensively so we can still
+      // surface the status code rather than swallowing the failure as
+      // a generic "Upload failed".
+      let data: { image_id?: string; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        /* response wasn't JSON — `data` stays empty */
+      }
 
       if (!res.ok) {
-        setError(data.error || "Upload failed");
+        const fallback = `Upload failed (${res.status}${
+          res.statusText ? ` ${res.statusText}` : ""
+        })`;
+        setError(data.error || fallback);
+        setPreview(null);
+        return;
+      }
+
+      if (!data.image_id) {
+        setError("Upload succeeded but server returned no image id");
         setPreview(null);
         return;
       }
 
       onUpload(data.image_id);
-    } catch {
-      setError("Upload failed");
+    } catch (err) {
+      console.error("ImageUpload: request failed", err);
+      const message = err instanceof Error ? err.message : "Network error";
+      setError(`Upload failed: ${message}`);
       setPreview(null);
     } finally {
       setUploading(false);

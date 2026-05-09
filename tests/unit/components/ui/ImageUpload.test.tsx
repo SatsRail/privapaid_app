@@ -114,9 +114,11 @@ describe("ImageUpload", () => {
     });
   });
 
-  it("shows default error when response has no error message", async () => {
+  it("shows fallback error with status when response has no error message", async () => {
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
       json: async () => ({}),
     });
 
@@ -129,7 +131,35 @@ describe("ImageUpload", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Upload failed")).toBeInTheDocument();
+      expect(
+        screen.getByText("Upload failed (500 Internal Server Error)")
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("falls back gracefully when response body is not JSON", async () => {
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      statusText: "Bad Gateway",
+      // .json() throws — response was HTML or empty
+      json: async () => {
+        throw new Error("Unexpected token < in JSON");
+      },
+    });
+
+    render(<ImageUpload {...defaultProps} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Upload failed (502 Bad Gateway)")
+      ).toBeInTheDocument();
     });
   });
 
@@ -145,7 +175,7 @@ describe("ImageUpload", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Upload failed")).toBeInTheDocument();
+      expect(screen.getByText("Upload failed: Network")).toBeInTheDocument();
     });
   });
 
