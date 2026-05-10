@@ -1,4 +1,5 @@
 import Badge from "@/components/ui/Badge";
+import AccessTimerPill from "@/components/AccessTimerPill";
 import { t } from "@/i18n";
 import type { SerializedProduct } from "@/app/c/[slug]/[mediaId]/types";
 
@@ -9,6 +10,7 @@ interface MediaHeaderProps {
   viewsCount: number;
   commentsCount: number;
   locale: string;
+  remainingSeconds?: number | null;
 }
 
 export default function MediaHeader({
@@ -16,8 +18,8 @@ export default function MediaHeader({
   mediaType,
   products,
   viewsCount,
-  commentsCount,
   locale,
+  remainingSeconds,
 }: MediaHeaderProps) {
   const pricePill = (() => {
     if (products.length === 0) return null;
@@ -33,7 +35,7 @@ export default function MediaHeader({
     }).format(lowest.cents / 100);
     return (
       <span
-        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+        className="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold"
         style={{ backgroundColor: "var(--theme-primary)", color: "var(--theme-bg, #000)" }}
       >
         {prices.length > 1 ? `${t(locale, "viewer.media.from")} ${formatted}` : formatted}
@@ -41,21 +43,23 @@ export default function MediaHeader({
     );
   })();
 
+  const hasTimeGated = products.some((p) => p.accessDurationSeconds != null);
+
   return (
     <div className="mb-6">
       <h1 className="text-2xl font-bold">{name}</h1>
-      <div className="mt-2 flex items-center gap-2">
-        <Badge>{mediaType}</Badge>
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
+        {hasTimeGated && remainingSeconds != null && (
+          <AccessTimerPill serverSeconds={remainingSeconds} locale={locale} />
+        )}
+        <Badge className="px-3 py-1 text-sm">{mediaType}</Badge>
         {pricePill}
       </div>
-      <div className="mt-1.5 flex gap-3 text-sm" style={{ color: "var(--theme-text-secondary)" }}>
-        {viewsCount > 0 && (
+      {viewsCount > 0 && (
+        <div className="mt-1.5 flex gap-3 text-sm" style={{ color: "var(--theme-text-secondary)" }}>
           <span>{t(locale, "viewer.media.views", { count: viewsCount })}</span>
-        )}
-        {commentsCount > 0 && (
-          <span>{t(locale, "viewer.media.comments", { count: commentsCount })}</span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

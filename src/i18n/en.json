@@ -258,6 +258,7 @@
   "viewer.media.not_available": "This content is not yet available for purchase.",
   "viewer.media.not_available_description": "No purchase options are available at this time. Check back later.",
   "viewer.media.from": "From",
+  "viewer.media.access_label": "Access",
   "viewer.media.views_one": "1 view",
   "viewer.media.views_other": "{count} views",
   "viewer.media.comments_one": "1 comment",

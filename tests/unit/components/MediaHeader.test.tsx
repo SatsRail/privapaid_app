@@ -90,13 +90,26 @@ describe("MediaHeader", () => {
     expect(screen.getByText("viewer.media.views:42")).toBeInTheDocument();
   });
 
-  it("hides comments when count is 0", () => {
-    render(<MediaHeader {...baseProps} commentsCount={0} />);
+  it("never renders the comments line (it lives in the comments section heading)", () => {
+    render(<MediaHeader {...baseProps} commentsCount={7} />);
     expect(screen.queryByText(/viewer\.media\.comments/)).not.toBeInTheDocument();
   });
 
-  it("shows comments when count is greater than 0", () => {
-    render(<MediaHeader {...baseProps} commentsCount={7} />);
-    expect(screen.getByText("viewer.media.comments:7")).toBeInTheDocument();
+  it("renders the access timer pill when remainingSeconds is set and a product is time-gated", () => {
+    const products = [makeProduct({ accessDurationSeconds: 86400 })];
+    render(<MediaHeader {...baseProps} products={products} remainingSeconds={3600} />);
+    expect(screen.getByText(/viewer\.media\.access_label/)).toBeInTheDocument();
+  });
+
+  it("does not render the access timer pill when no product is time-gated", () => {
+    const products = [makeProduct({ priceCents: 100 })];
+    render(<MediaHeader {...baseProps} products={products} remainingSeconds={3600} />);
+    expect(screen.queryByText(/viewer\.media\.access_label/)).not.toBeInTheDocument();
+  });
+
+  it("does not render the access timer pill when remainingSeconds is null", () => {
+    const products = [makeProduct({ accessDurationSeconds: 86400 })];
+    render(<MediaHeader {...baseProps} products={products} remainingSeconds={null} />);
+    expect(screen.queryByText(/viewer\.media\.access_label/)).not.toBeInTheDocument();
   });
 });

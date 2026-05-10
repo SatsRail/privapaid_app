@@ -7,7 +7,6 @@ import * as Sentry from "@sentry/nextjs";
 import CheckoutOverlay from "@/components/CheckoutOverlay";
 import ContentRenderer from "@/components/ContentRenderer";
 import HeartbeatManager from "@/components/HeartbeatManager";
-import CountdownTimer from "@/components/CountdownTimer";
 import ExchangeModal from "@/components/ExchangeModal";
 import { useLocale } from "@/i18n/useLocale";
 import type { TranslatorFn } from "@/i18n";
@@ -47,6 +46,8 @@ interface PaymentWallProps {
   mediaType: string;
   merchantLogo?: string;
   merchantName?: string;
+  onRemainingSeconds?: (seconds: number) => void;
+  onExpired?: () => void;
 }
 
 /** Media types that should show artwork/thumbnail alongside the player */
@@ -60,6 +61,8 @@ export default function PaymentWall({
   mediaType,
   merchantLogo,
   merchantName,
+  onRemainingSeconds,
+  onExpired,
 }: PaymentWallProps) {
   const { data: session } = useSession();
   const { t, locale } = useLocale();
@@ -69,7 +72,6 @@ export default function PaymentWall({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [exchangeModalOpen, setExchangeModalOpen] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [unlockFailure, setUnlockFailure] = useState<{
     orderNumber: string | null;
     orderId: string | null;
@@ -129,7 +131,7 @@ export default function PaymentWall({
           setDecryptedBytes(bytes);
           setActiveProductId(product.productId);
           if (data.remaining_seconds != null) {
-            setRemainingSeconds(data.remaining_seconds);
+            onRemainingSeconds?.(data.remaining_seconds);
           }
           return;
         } catch {
@@ -152,7 +154,7 @@ export default function PaymentWall({
               setDecryptedBytes(bytes);
               setActiveProductId(product.productId);
               if (data.remaining_seconds != null) {
-                setRemainingSeconds(data.remaining_seconds);
+                onRemainingSeconds?.(data.remaining_seconds);
               }
               return;
             } else {
@@ -343,8 +345,8 @@ export default function PaymentWall({
     lastKeyRef.current = null;
     setDecryptedBytes(null);
     setActiveProductId(null);
-    setRemainingSeconds(null);
-  }, []);
+    onExpired?.();
+  }, [onExpired]);
 
   const handleKeyRefreshed = useCallback(
     async (key: string) => {
@@ -368,27 +370,13 @@ export default function PaymentWall({
   );
 
   const handleRemainingSeconds = useCallback((seconds: number) => {
-    setRemainingSeconds(seconds);
-  }, []);
-
-  // Determine if the active product is time-gated
-  const activeProduct = activeProductId
-    ? products.find((p) => p.productId === activeProductId)
-    : null;
-  const isTimeGated = activeProduct?.accessDurationSeconds != null;
+    onRemainingSeconds?.(seconds);
+  }, [onRemainingSeconds]);
 
   // Content is unlocked
   if (decryptedBytes) {
     return (
       <div className="mb-6">
-        {isTimeGated && remainingSeconds != null && (
-          <div className="mb-3">
-            <CountdownTimer
-              serverSeconds={remainingSeconds}
-              onExpired={handleExpired}
-            />
-          </div>
-        )}
         {ARTWORK_TYPES.has(mediaType) && thumbnailUrl && (
           <div className="mb-4 flex justify-center">
             <img

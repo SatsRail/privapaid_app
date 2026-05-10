@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useCallback } from "react";
 import type { MediaPageData } from "@/app/c/[slug]/[mediaId]/types";
 import MediaBreadcrumb from "@/components/MediaBreadcrumb";
 import MediaHeader from "@/components/MediaHeader";
@@ -23,6 +26,9 @@ export default function MediaLayout({
   const hasPreview = previewImages.length > 0;
   const useSidebar = hasPreview;
 
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const handleExpired = useCallback(() => setRemainingSeconds(null), []);
+
   const mainContent = adminPreviewSourceUrl ? (
     <>
       <AdminPreviewBanner mediaName={media.name} />
@@ -38,6 +44,8 @@ export default function MediaLayout({
         mediaType={media.media_type}
         merchantLogo={instanceConfig.theme.logo}
         merchantName={instanceConfig.name}
+        onRemainingSeconds={setRemainingSeconds}
+        onExpired={handleExpired}
       />
     </ErrorBoundary>
   ) : (
@@ -68,6 +76,7 @@ export default function MediaLayout({
             viewsCount={media.views_count}
             commentsCount={media.comments_count}
             locale={locale}
+            remainingSeconds={remainingSeconds}
           />
 
           {mainContent}
