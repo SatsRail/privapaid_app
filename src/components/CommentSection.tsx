@@ -192,7 +192,7 @@ export default function CommentSection({
               className="mb-2 block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
               style={{
                 borderColor: "var(--theme-border)",
-                backgroundColor: "var(--theme-bg-secondary)",
+                backgroundColor: "var(--theme-bg)",
                 color: "var(--theme-text)",
               }}
             />
@@ -206,7 +206,7 @@ export default function CommentSection({
             className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
             style={{
               borderColor: "var(--theme-border)",
-              backgroundColor: "var(--theme-bg-secondary)",
+              backgroundColor: "var(--theme-bg)",
               color: "var(--theme-text)",
             }}
           />
@@ -227,16 +227,9 @@ export default function CommentSection({
       ) : null}
 
       {comments.length > 0 ? (
-        <div className="space-y-4">
+        <div className="divide-y divide-[var(--theme-border)]">
           {comments.map((c) => (
-            <div
-              key={c._id}
-              className="rounded-lg border p-4"
-              style={{
-                borderColor: "var(--theme-border)",
-                backgroundColor: "var(--theme-bg-secondary)",
-              }}
-            >
+            <div key={c._id} className="py-4 first:pt-0 last:pb-0">
               <div className="mb-1 flex items-center gap-2 text-sm">
                 <span className="font-medium" style={{ color: "var(--theme-text)" }}>
                   {c.customer.nickname}
