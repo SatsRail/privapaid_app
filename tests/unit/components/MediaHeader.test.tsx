@@ -9,12 +9,6 @@ vi.mock("@/i18n", () => ({
   },
 }));
 
-vi.mock("@/components/ui/Badge", () => ({
-  default: ({ children }: { children: React.ReactNode }) => (
-    <span data-testid="badge">{children}</span>
-  ),
-}));
-
 import MediaHeader from "@/components/MediaHeader";
 import type { SerializedProduct } from "@/app/c/[slug]/[mediaId]/types";
 
@@ -39,23 +33,23 @@ describe("MediaHeader", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Test Media");
   });
 
-  it("renders the media type badge", () => {
+  it("renders the media type pill", () => {
     render(<MediaHeader {...baseProps} />);
-    expect(screen.getByTestId("badge")).toHaveTextContent("video");
+    expect(screen.getByText("video")).toBeInTheDocument();
   });
 
   it("shows no price pill when there are no products", () => {
     const { container } = render(<MediaHeader {...baseProps} />);
-    // No price pill rendered — only badge inside the flex container
+    // Only the media-type pill should render in the flex row
     const spans = container.querySelectorAll(".rounded-full");
-    expect(spans.length).toBe(0);
+    expect(spans.length).toBe(1);
   });
 
   it("shows no price pill when products lack prices", () => {
     const products = [makeProduct({ priceCents: undefined })];
     const { container } = render(<MediaHeader {...baseProps} products={products} />);
     const spans = container.querySelectorAll(".rounded-full");
-    expect(spans.length).toBe(0);
+    expect(spans.length).toBe(1);
   });
 
   it("shows formatted price for a single product", () => {

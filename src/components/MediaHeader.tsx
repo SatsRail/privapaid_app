@@ -1,4 +1,3 @@
-import Badge from "@/components/ui/Badge";
 import AccessTimerPill from "@/components/AccessTimerPill";
 import { t } from "@/i18n";
 import type { SerializedProduct } from "@/app/c/[slug]/[mediaId]/types";
@@ -52,7 +51,9 @@ export default function MediaHeader({
         {hasTimeGated && remainingSeconds != null && (
           <AccessTimerPill serverSeconds={remainingSeconds} locale={locale} />
         )}
-        <Badge className="px-3 py-1 text-sm">{mediaType}</Badge>
+        <span className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200">
+          {mediaType}
+        </span>
         {pricePill}
       </div>
       {viewsCount > 0 && (
