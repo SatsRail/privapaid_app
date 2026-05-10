@@ -71,7 +71,6 @@ export default function MediaLayout({
         <div className="min-w-0">
           <MediaHeader
             name={media.name}
-            mediaType={media.media_type}
             products={products}
             viewsCount={media.views_count}
             commentsCount={media.comments_count}

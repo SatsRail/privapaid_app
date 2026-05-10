@@ -4,7 +4,6 @@ import type { SerializedProduct } from "@/app/c/[slug]/[mediaId]/types";
 
 interface MediaHeaderProps {
   name: string;
-  mediaType: string;
   products: SerializedProduct[];
   viewsCount: number;
   commentsCount: number;
@@ -14,7 +13,6 @@ interface MediaHeaderProps {
 
 export default function MediaHeader({
   name,
-  mediaType,
   products,
   viewsCount,
   locale,
@@ -51,9 +49,6 @@ export default function MediaHeader({
         {hasTimeGated && remainingSeconds != null && (
           <AccessTimerPill serverSeconds={remainingSeconds} locale={locale} />
         )}
-        <span className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200">
-          {mediaType}
-        </span>
         {pricePill}
       </div>
       {viewsCount > 0 && (

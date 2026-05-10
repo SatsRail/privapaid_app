@@ -55,7 +55,6 @@ export default function PhotoSetLayout({
 
       <MediaHeader
         name={media.name}
-        mediaType={media.media_type}
         products={products}
         viewsCount={media.views_count}
         commentsCount={media.comments_count}

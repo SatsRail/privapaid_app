@@ -21,7 +21,6 @@ const makeProduct = (overrides: Partial<SerializedProduct> = {}): SerializedProd
 describe("MediaHeader", () => {
   const baseProps = {
     name: "Test Media",
-    mediaType: "video",
     products: [] as SerializedProduct[],
     viewsCount: 0,
     commentsCount: 0,
@@ -33,23 +32,17 @@ describe("MediaHeader", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Test Media");
   });
 
-  it("renders the media type pill", () => {
-    render(<MediaHeader {...baseProps} />);
-    expect(screen.getByText("video")).toBeInTheDocument();
-  });
-
   it("shows no price pill when there are no products", () => {
     const { container } = render(<MediaHeader {...baseProps} />);
-    // Only the media-type pill should render in the flex row
     const spans = container.querySelectorAll(".rounded-full");
-    expect(spans.length).toBe(1);
+    expect(spans.length).toBe(0);
   });
 
   it("shows no price pill when products lack prices", () => {
     const products = [makeProduct({ priceCents: undefined })];
     const { container } = render(<MediaHeader {...baseProps} products={products} />);
     const spans = container.querySelectorAll(".rounded-full");
-    expect(spans.length).toBe(1);
+    expect(spans.length).toBe(0);
   });
 
   it("shows formatted price for a single product", () => {
