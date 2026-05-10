@@ -29,6 +29,10 @@ describe("Category model", () => {
   });
 
   it("enforces slug uniqueness", async () => {
+    // Ensure the unique index is built before relying on it — Mongoose
+    // creates indexes lazily in the background, which races the duplicate
+    // insert on a fresh mongodb-memory-server and flakes in CI.
+    await Category.init();
     await createCategory({ slug: "unique-cat" });
     await expect(createCategory({ slug: "unique-cat" })).rejects.toThrow();
   });
