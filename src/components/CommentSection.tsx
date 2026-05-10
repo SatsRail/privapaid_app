@@ -169,8 +169,14 @@ export default function CommentSection({
   const canComment = isCustomer || hasAccess;
 
   return (
-    <div className="mt-8 border-t border-zinc-800 pt-6">
-      <h3 className="mb-4 text-lg font-semibold">
+    <div
+      className="mt-8 border-t pt-6"
+      style={{ borderColor: "var(--theme-border)" }}
+    >
+      <h3
+        className="mb-4 text-lg font-semibold"
+        style={{ color: "var(--theme-heading)" }}
+      >
         {t("viewer.comments.title", { count: comments.length })}
       </h3>
 
@@ -183,7 +189,12 @@ export default function CommentSection({
               onChange={(e) => setNickname(e.target.value)}
               placeholder={t("viewer.comments.nickname_placeholder")}
               maxLength={30}
-              className="mb-2 block w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
+              className="mb-2 block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
+              style={{
+                borderColor: "var(--theme-border)",
+                backgroundColor: "var(--theme-bg-secondary)",
+                color: "var(--theme-text)",
+              }}
             />
           )}
           <textarea
@@ -192,7 +203,12 @@ export default function CommentSection({
             placeholder={t("viewer.comments.body_placeholder")}
             rows={3}
             maxLength={2000}
-            className="block w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
+            className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-primary)]"
+            style={{
+              borderColor: "var(--theme-border)",
+              backgroundColor: "var(--theme-bg-secondary)",
+              color: "var(--theme-text)",
+            }}
           />
           {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
           <div className="mt-2 flex justify-end">
@@ -202,7 +218,10 @@ export default function CommentSection({
           </div>
         </form>
       ) : productIds.length > 0 ? (
-        <p className="mb-6 text-sm text-zinc-500">
+        <p
+          className="mb-6 text-sm"
+          style={{ color: "var(--theme-text-secondary)" }}
+        >
           {t("viewer.comments.paywall_message")}
         </p>
       ) : null}
@@ -212,20 +231,30 @@ export default function CommentSection({
           {comments.map((c) => (
             <div
               key={c._id}
-              className="rounded-lg border border-zinc-800 bg-zinc-900 p-4"
+              className="rounded-lg border p-4"
+              style={{
+                borderColor: "var(--theme-border)",
+                backgroundColor: "var(--theme-bg-secondary)",
+              }}
             >
               <div className="mb-1 flex items-center gap-2 text-sm">
-                <span className="font-medium">{c.customer.nickname}</span>
-                <span className="text-zinc-500">
+                <span className="font-medium" style={{ color: "var(--theme-text)" }}>
+                  {c.customer.nickname}
+                </span>
+                <span style={{ color: "var(--theme-text-secondary)" }}>
                   {new Date(c.created_at).toLocaleDateString(locale, { timeZone: "UTC" })}
                 </span>
               </div>
-              <p className="text-sm text-zinc-300">{c.body}</p>
+              <p className="text-sm" style={{ color: "var(--theme-text)" }}>
+                {c.body}
+              </p>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-sm text-zinc-500">{t("viewer.comments.empty")}</p>
+        <p className="text-sm" style={{ color: "var(--theme-text-secondary)" }}>
+          {t("viewer.comments.empty")}
+        </p>
       )}
     </div>
   );
